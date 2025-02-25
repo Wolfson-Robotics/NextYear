@@ -11,8 +11,6 @@ import java.util.Map;
 
 public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
 
-    private Direction direction = Direction.FORWARD;
-
     private int lowerPos = Integer.MIN_VALUE;
     private int upperPos = Integer.MAX_VALUE;
 
@@ -24,13 +22,14 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
 
     public DcMotorExHandler(DcMotorEx device) {
         super(device);
+        device.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
 
     private void driveMotor(int targetPosition) {
         this.device.setTargetPosition(targetPosition);
         this.device.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.device.setPower(targetPosition > getPosition() ? this.backwardMult() : this.forwardMult());
+        this.device.setPower(targetPosition > getPosition() ? 1 : -1);
     }
 
     public boolean limit() {
@@ -68,18 +67,14 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         }
     }
 
+    public void resetEncoder() {
+        this.device.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+    }
     public void setDirection(Direction direction) {
         this.device.setDirection(direction);
-        this.direction = this.device.getDirection();
     }
 
 
-    private int forwardMult() {
-        return this.direction.equals(Direction.FORWARD) ? 1 : -1;
-    }
-    private int backwardMult() {
-        return this.direction.equals(Direction.FORWARD) ? -1 : 1;
-    }
     private boolean posWithin() {
         return this.lowerPos <= this.getPosition() && this.getPosition() <= this.upperPos;
     }

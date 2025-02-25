@@ -4,6 +4,9 @@ public class DriveJava extends RobotBase {
 
     @Override
     public void runOpMode() {
-
+        waitForStart();
+        while (opModeIsActive()) {
+            
+        }
     }
 }
