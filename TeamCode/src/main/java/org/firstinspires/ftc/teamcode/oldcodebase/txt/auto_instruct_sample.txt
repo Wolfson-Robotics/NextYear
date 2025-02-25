@@ -1,0 +1,290 @@
+// powerFactor 0.675
+powerFactor 0.715
+// preloaded sample init
+sleep 150
+runTasksAsync
+	moveMotor lift -4220 1.5
+	directSuccession
+		moveBot 3.55 0 0 0.75
+		sleep 150
+		moveBot 15.819595645412130745 0.75 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+sleep 150
+
+
+// preloaded sample basket
+// moveMotor lift -4220 1.5
+// sleep 150
+moveBot 4.15 0.5 0 0
+sleep 150
+setPosition arm 0.8094444444444444
+sleep 150
+setPosition claw 0.3
+sleep 250
+runTasksAsync
+	setPosition arm 0.6088888888888888
+	moveBot 5.15 -0.5 0 0
+runTasksAsyncEnd
+sleep 150
+
+
+
+// right sample init (basket -> ready to start right sample)
+runTasksAsync
+	moveMotor lift 0 1.5
+	setPosition claw 0.3
+	directSuccession
+		turnBot 94.913043478260876
+		sleep 250
+		// moveBot 1.4712286158631414 0 0 1
+		// moveBot 0.6712286158631414 0 0 1
+		moveBot 1.6712286158631414 0 0 1
+		//sleep 150
+		// moveBot 18.937169517884915 1 0 0
+		moveBot 19.267 1 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+
+
+// right sample grab sample
+// sleep 150
+sleep 150
+setPosition arm 0.9300000000000002
+sleep 300
+setPosition claw 0.46
+sleep 500
+setPosition arm 0.6094444444444445
+//sleep 50
+
+
+// right sample turn back to go to basket
+sleep 250
+runTasksAsync
+	moveMotor lift -4220 1.5
+	directSuccession
+		// turnBot -135.086956521739131
+		turnBot -125.086956521739131
+		sleep 200
+		// moveBot 18.964541213063764 0.65 0 0
+		// moveBot 18.964541213063764 0.75 0 0
+		moveBot 16.964541213063764 0.75 0 0
+		// moveBot 15.964541213063764 0.8 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+sleep 150
+
+
+
+// moveBot 16.564541213063764 1 0 0
+// moveBot 4.2923794712286165 1 0 0
+// moveBot 5.8923794712286165 0.8 0 0
+// moveBot 7.8923794712286165 0.8 0 0
+
+
+// right sample basket operation
+// moveBot 3 0.65 0 0
+moveBot 2 0.65 0 0
+sleep 150
+setPosition arm 0.76
+sleep 150
+setPosition claw 0.3
+sleep 150
+setPosition arm 0.609
+sleep 150
+// moveBot 3.9937791601866253 -0.6 0 0
+moveBot 2.9937791601866253 -0.6 0 0
+sleep 50
+
+
+
+// middle sample init
+runTasksAsync
+	moveMotor lift 0 1.5
+	setPosition claw 0.3
+	directSuccession
+		// turnBot 133.86521739130437
+		// turnBot 139.96521739130437
+		// turnBot 143.96521739130437
+		// turnBot 144.07521739130437
+		turnBot 147.07521739130437
+		sleep 150
+		// moveBot 10.02954898911353 1 0 0
+		// moveBot 6.52954898911353 1 0 0
+		// moveBot 8.52954898911353 1 0 0
+		moveBot 9.5 1 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+// middle sample grab sample
+sleep 150
+setPosition arm 0.9300000000000002
+sleep 300
+setPosition claw 0.46
+sleep 300
+
+
+// middle sample go to basket
+runTasksAsync
+	setPosition arm 0.5394444444444444
+	// moveMotor lift -3980 1.5
+	moveMotor lift -4220 1.5
+	directSuccession
+		// turnBot -179.21739130434784
+		// turnBot -169.21739130434784
+		// turnBot 173.11739130434784
+		turnBot 165.11739130434784
+		sleep 150
+		// moveBot 14.447900466562984 1 0 0
+		// moveBot 11.447900466562984 1 0 0
+		moveBot 7.947900466562984 0.75 0 0
+		// turnBot 16.826086956521742
+		// turnBot 60.926086956521742
+		turnBot 65.926086956521742
+	directSuccessionEnd
+runTasksAsyncEnd
+
+
+// middle sample basket operation
+// turnBot 27.5
+sleep 150
+// moveBot 2.75 0.8 0 0
+// moveBot 3.55 0.8 0 0
+moveBot 7.455 0.65 0 0
+sleep 150
+setPosition arm 0.7594444444444446
+sleep 150
+setPosition claw 0.3
+sleep 150
+setPosition arm 0.47888888888888886
+sleep 150
+moveBot 5.91601866251944 -0.6 0 0
+sleep 150
+
+
+
+// left sample init go to sample
+runTasksAsync
+	moveMotor lift 0 1.5
+	setPosition claw 0.3
+	directSuccession
+		// turnBot 104.86956521739131
+		// turnBot 102.86956521739131
+		// turnBot 95.86956521739131
+		turnBot 100.9695652173913
+		sleep 150
+		// moveBot 13.250388802488335 1 0 0
+		// moveBot 13.66096423017107214 1 0 0
+		moveBot 12.56096423017107214 1 0 0
+		sleep 150
+		// moveBot 2 0 0 -1
+		moveBot 1.45 0 0 -1
+	directSuccessionEnd
+runTasksAsyncEnd
+
+
+
+// left sample grab sample
+// sleep 150
+// setPosition claw 0.3
+// moveBot 1 0 0 -1
+sleep 150
+setPosition arm 0.9000000000000001
+sleep 300
+setPosition claw 0.46
+sleep 300
+// moveBot 1 0 0 1
+// moveBot 2 0 0 1
+// sleep 150
+
+// left sample go to basket
+runTasksAsync
+	setPosition arm 0.6094444444444445
+	moveMotor lift -4220 0.5
+	directSuccession
+		turnBot -167.08695652173914
+		sleep 150
+		// moveBot 15.975116640746501 1 0 0
+		// moveBot 12.975116640746501 0.75 0 0
+		moveBot 13.975116640746501 0.75 0 0
+		sleep 150
+		// turnBot 58.30434782608696
+		turnBot 68.30434782608696
+	directSuccessionEnd
+runTasksAsyncEnd
+
+
+// left sample basket operation
+moveBot 4 0.7 0 0
+sleep 150
+moveBot 2.7433903576982894 1 0 0
+sleep 150
+setPosition arm 0.76
+sleep 150
+setPosition claw 0.3
+sleep 150
+setPosition arm 0.609
+sleep 150
+moveBot 3.9937791601866253 -0.6 0 0
+sleep 50
+moveMotor lift 0 0.5
+
+
+
+
+
+
+
+STOP
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+moveBot 1 0 0 0
+*/
+
+turnBot 124.82608695652175
+sleep 250
+moveBot 13.343701399688957 1 0 0
+sleep 150
+turnBot -17.217391304347828
+sleep 250
+moveBot 2.2954898911353033 1 0 0
+sleep 150
+setPosition claw 0.3
+sleep 250
+setPosition arm 0.9300000000000002
+sleep 250
+setPosition claw 0.46
+sleep 250
+setPosition arm 0.38944444444444426
+sleep 150
+turnBot -145.17391304347828
+sleep 250
+/*
+moveBot 14.892690513219286 1 0 0
+*/
+moveBot 13.862690513219286 1 0 0
+sleep 150
+moveMotor lift -3980 1.5
+sleep 250
+turnBot 31.695652173913047
+sleep 250
+setPosition arm 0.768888888888889
+sleep 150
+setPosition claw 0.3
+sleep 150
+setPosition arm 0.42888888888888865
+sleep 150
+moveBot 3.191290824261275 -0.5 0 0
+sleep 150
+moveMotor lift -80 1
+sleep 250

@@ -1,0 +1,144 @@
+// preloaded sample init
+runTasksAsync
+	topBasketLift, 
+	directSuccession
+		moveBot 3.55 0 0 0.65
+		sleep 150
+		moveBot 15.819595645412130745 0.65 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+sleep 150
+// preloaded sample basket
+moveBot 4.15 0.5 0 0
+sleep 150
+sampleInBasket 
+sleep 150
+restArm 
+sleep 350
+moveBot 5.15 -0.5 0 0
+sleep 100
+// right sample init basket -> ready to start right sample
+runTasksAsync
+	restLift, 
+	moveServo claw 0.15
+	directSuccession
+		turnBot 100
+		sleep 250
+		moveBot 5 0 0 0.75
+		sleep 50
+		moveBot 18.367 0.75 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+// right sample grab sample
+sleep 250
+goToSample 
+sleep 100
+grabSample 
+sleep 150
+// right sample turn back to go to basket
+runTasksAsync
+	restArm, 
+	topBasketLift, 
+	directSuccession
+		turnBot -126.5
+		sleep 200
+		moveBot 15 0.65 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+sleep 150
+// right sample basket operation
+moveBot 4 0.65 0 0
+sleep 150
+sampleInBasket 
+sleep 350
+restArm 
+sleep 350
+moveBot 6 -0.6 0 0
+sleep 250
+// middle sample init go to sample
+runTasksAsync
+	restLift, 
+	moveServo claw 0.15
+	directSuccession
+		turnBot 146
+		sleep 150
+		moveBot 5 0 0 0.75
+		sleep 300
+		moveBot 7.125 0.75 0 0
+	directSuccessionEnd
+runTasksAsyncEnd
+// middle sample grab sample
+sleep 150
+goToSample 
+sleep 100
+grabSample 
+sleep 150
+moveBot 4 0 0 1
+// middle sample go to basket
+runTasksAsync
+	restArm, 
+	topBasketLift, 
+	directSuccession
+		turnBot 165.11739130434784
+		sleep 150
+		moveBot 8 0.65 0 0
+		turnBot 65.926086956521742
+	directSuccessionEnd
+runTasksAsyncEnd
+// middle sample basket operation
+sleep 150
+moveBot 9.85 0.65 0 0
+sleep 150
+sampleInBasket 
+sleep 150
+restArm 
+sleep 350
+moveBot 10.155 -0.6 0 0
+sleep 150
+// left sample init go to sample
+runTasksAsync
+	restLift, 
+	moveServo claw 0.46
+	directSuccession
+		turnBot 115
+		sleep 150
+		sleep 250
+		moveBot 14.277 0 0 -0.75
+		sleep 150
+		moveBot 11.985 0.75 0 0
+		sleep 150
+		turnBot -16.434782608695652
+		sleep 250
+		moveBot 2.202177293934681 0.75 0 0
+		sleep 150
+		turnBot 2.391304347826088
+	directSuccessionEnd
+runTasksAsyncEnd
+// left sample grab sample
+sleep 150
+moveBot 1.75 -0.5 0 0
+// grabSample
+moveServo arm 0.8
+sleep 150
+moveServo claw 0.15
+sleep 150
+moveServo arm 0.91
+sleep 250
+moveServo claw 0.46
+sleep 300
+runTasksAsync
+	topBasketLift, 
+	restArm, 
+	directSuccession
+		moveBot 20.771384136858476 -0.75 0 0
+		sleep 150
+		turnBot -85
+	directSuccessionEnd
+runTasksAsyncEnd
+sleep 150
+moveBot 5.74805598755832 0.745 0 0
+sleep 150
+sampleInBasket 
+setPosition arm 0.6
+sleep 250
+restArm 

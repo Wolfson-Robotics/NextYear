@@ -1,0 +1,16 @@
+setPosition claw 0.46
+sleep 150
+// moveBot 28.44167962674961 1 0 0
+moveBot 25.44167962674961 1 0 0
+sleep 150
+// liftBot 2
+moveMotor lift -2160 0.75
+sleep 150
+moveBot 3.5 1 0 0
+sleep 150
+moveMotor lift -989 0.5
+sleep 150
+setPosition claw 0.3
+sleep 150
+moveBot 4 -1 0 0
+sleep 150
