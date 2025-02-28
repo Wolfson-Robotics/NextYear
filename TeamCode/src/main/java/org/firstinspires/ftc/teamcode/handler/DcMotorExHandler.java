@@ -67,6 +67,15 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         }
     }
 
+    public void setPosition(double position) {
+        if (!posWithin(position)) return;
+        driveMotor((int) position);
+        while (getPosition() != position) {
+            // Same method that idle() in LinearOpMode uses
+            Thread.yield();
+        }
+    }
+
     public void resetEncoder() {
         this.device.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
     }
@@ -75,8 +84,11 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     }
 
 
+    public boolean posWithin(double position) {
+        return this.lowerPos <= position && position <= this.upperPos;
+    }
     private boolean posWithin() {
-        return this.lowerPos <= this.getPosition() && this.getPosition() <= this.upperPos;
+        return posWithin(getPosition());
     }
 
 

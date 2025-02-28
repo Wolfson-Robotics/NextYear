@@ -17,6 +17,21 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
         super(device);
     }
 
+
+    public void setPosition(double position) {
+        if (!posWithin(position)) return;
+        setPositionAsync(position);
+        while (Math.abs(device.getPosition() - position) > this.speed*0.1) {
+            // Same method that idle() in LinearOpMode uses
+            Thread.yield();
+        }
+    }
+    public void setPositionAsync(double position) {
+        if (!posWithin(position)) return;
+        device.setPosition(position);
+    }
+
+
     public void drivePosition(double targetPosition) {
         if (!posWithin(targetPosition)) return;
         if (Math.abs(getPosition() - targetPosition) <= driveIncrement) {
@@ -34,6 +49,7 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
         }
     }
 
+
     public void setPower(double power) {
         if (power == 0) return;
         if (power < 0) {
@@ -42,6 +58,21 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
             setPositionAsync(getPosition() + driveIncrement);
         }
     }
+
+    @Override
+    public void control(boolean back, boolean forward) {
+        if (back && forward) return;
+        if (back) this.setPower(-1);
+        if (forward) this.setPower(1);
+    }
+
+    public void toggle(boolean min, boolean max) {
+        if (min && max) return;
+        if (min) min();
+        if (max) max();
+    }
+
+
 
     public boolean posWithin(double position) {
         return minPos <= position && position <= maxPos;
@@ -64,18 +95,6 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
         device.setDirection(direction);
     }
 
-    public void setPosition(double position) {
-        if (!posWithin(position)) return;
-        setPositionAsync(position);
-        while (Math.abs(device.getPosition() - position) > this.speed*0.1) {
-            // Same method that idle() in LinearOpMode uses
-            Thread.yield();
-        }
-    }
-    public void setPositionAsync(double position) {
-        if (!posWithin(position)) return;
-        device.setPosition(position);
-    }
 
     public void setDriveIncrement(double driveIncrement) {
         this.driveIncrement = driveIncrement;
