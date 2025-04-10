@@ -1,5 +1,7 @@
 package  org.firstinspires.ftc.teamcode;
 
+import android.os.Environment;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -7,12 +9,15 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.handler.DcMotorExHandler;
-import org.firstinspires.ftc.teamcode.handler.HardwareComponentHandler;
-import org.firstinspires.ftc.teamcode.handler.ServoHandler;
+import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
+import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
+import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
+import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
+
+import java.lang.reflect.Field;
 
 public abstract class RobotBase extends LinearOpMode {
 
@@ -36,6 +41,9 @@ public abstract class RobotBase extends LinearOpMode {
     protected final CRServo rightRoller;
 
     protected OpenCvCamera camera;
+
+    protected final String storagePath = Environment.getExternalStorageDirectory().getPath();
+    protected final String logsPath = storagePath + "/Logs/";
 
 
 
@@ -69,6 +77,23 @@ public abstract class RobotBase extends LinearOpMode {
         this.claw.scaleRange(0.36, 0.46);
         this.claw.max();
 
+        this.registerHandlers();
+    }
+
+    public void registerHandlers() {
+        Field[] fields = getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (!HardwareComponentHandler.class.isAssignableFrom(field.getType())) {
+                continue;
+            }
+            HardwareComponentHandler<?> handler;
+            try {
+                handler = (HardwareComponentHandler<?>) field.get(this);
+            } catch (IllegalAccessException e) {
+                continue;
+            }
+            HandlerMap.put(handler.getName(), handler);
+        }
     }
 
 
@@ -95,6 +120,10 @@ public abstract class RobotBase extends LinearOpMode {
             }
         });
 
+    }
+
+    protected boolean isControlled(double control) {
+        return Math.abs(control) > 0.1;
     }
 
 

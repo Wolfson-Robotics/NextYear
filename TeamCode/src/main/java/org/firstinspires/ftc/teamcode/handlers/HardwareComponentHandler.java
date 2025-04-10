@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.handler;
+package org.firstinspires.ftc.teamcode.handlers;
 
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 
@@ -12,6 +12,7 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
 
     public abstract void setPower(double power);
     public abstract void setPosition(double position);
+    public abstract double getPosition();
 
 
     public void control(double input) {
@@ -29,6 +30,16 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
     @Deprecated
     public T getDevice() {
         return this.device;
+    }
+
+    public String getName() {
+        String connectionInfo = device.getConnectionInfo();
+        String[] parts = connectionInfo.split(":");
+        if (parts.length >= 2) {
+            return parts[1];
+        } else {
+            return "Unknown";
+        }
     }
 
 }

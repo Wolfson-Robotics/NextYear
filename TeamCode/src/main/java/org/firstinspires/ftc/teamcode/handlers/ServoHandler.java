@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.handler;
+package org.firstinspires.ftc.teamcode.handlers;
 
 import com.qualcomm.robotcore.hardware.Servo;
 
@@ -66,10 +66,18 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
         if (forward) this.setPower(1);
     }
 
-    public void toggle(boolean min, boolean max) {
+    public void toggleDual(boolean min, boolean max) {
         if (min && max) return;
         if (min) min();
         if (max) max();
+    }
+    public void toggle(boolean toggle) {
+        if (!toggle) return;
+        if (atMin()) {
+            max();
+            return;
+        }
+        min();
     }
 
 
@@ -103,6 +111,12 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
         this.speed = speed;
     }
 
+    public boolean atMin() {
+        return this.getPosition() == this.minPos;
+    }
+    public boolean atMax() {
+        return this.getPosition() == this.maxPos;
+    }
     public double getPosition() {
         return device.getPosition();
     }

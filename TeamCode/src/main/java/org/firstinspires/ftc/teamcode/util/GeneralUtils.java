@@ -35,17 +35,4 @@ public class GeneralUtils {
 
 
 
-    protected void runTasksAsync(List<Runnable> fns) {
-        ExecutorService executorService = Executors.newFixedThreadPool(fns.size()); // Thread pool
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        fns.forEach(fn -> futures.add(CompletableFuture.runAsync(fn, executorService)));
-
-        CompletableFuture<Void> allThreads = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        allThreads.join();
-        executorService.shutdown();
-    }
-    protected void runTasksAsync(Runnable... fns) {
-        runTasksAsync(Arrays.stream(fns).collect(Collectors.toList()));
-    }
-
 }

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.handler;
+package org.firstinspires.ftc.teamcode.handlers;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -16,8 +16,9 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
 
     private Map<IntegerBounds, Double> speedMap;
 
+    private final int startPos = 0;
     private boolean isPowered = false;
-    private int lastPoweredPos = 0;
+    private double lastPoweredPos = 0;
 
 
     public DcMotorExHandler(DcMotorEx device) {
@@ -26,10 +27,13 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     }
 
 
-    private void driveMotor(int targetPosition) {
-        this.device.setTargetPosition(targetPosition);
+    private void driveMotor(double targetPosition, double power) {
+        this.device.setTargetPosition((int) targetPosition);
         this.device.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.device.setPower(targetPosition > getPosition() ? 1 : -1);
+        this.device.setPower(targetPosition > getPosition() ? power : -power);
+    }
+    private void driveMotor(double targetPosition) {
+        driveMotor(targetPosition, 1);
     }
 
     public boolean limit() {
@@ -68,8 +72,11 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     }
 
     public void setPosition(double position) {
+        this.setPosition(position, 1);
+    }
+    public void setPosition(double position, double power) {
         if (!posWithin(position)) return;
-        driveMotor((int) position);
+        driveMotor((int) position, power);
         while (getPosition() != position) {
             // Same method that idle() in LinearOpMode uses
             Thread.yield();
@@ -104,7 +111,7 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         return this.device.getPower();
     }
 
-    public int getPosition() {
+    public double getPosition() {
         return this.device.getCurrentPosition();
     }
 
