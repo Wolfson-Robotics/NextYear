@@ -3,6 +3,7 @@ package  org.firstinspires.ftc.teamcode;
 import android.os.Environment;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -19,26 +20,23 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.lang.reflect.Field;
 
-public abstract class RobotBase extends LinearOpMode {
+public abstract class RobotBase extends OpMode {
 
-    protected final DcMotorExHandler lf_drive;
-    protected final DcMotorExHandler lb_drive;
-    protected final DcMotorExHandler rf_drive;
-    protected final DcMotorExHandler rb_drive;
+    protected DcMotorExHandler lf_drive, lb_drive, rf_drive, rb_drive;
 
-    protected final DcMotorExHandler lift;
+    protected DcMotorExHandler lift;
 
     // Temporarily carry over components from the Into the Deep season
     // for testing for now
-    protected final ServoHandler arm;
-    protected final ServoHandler claw;
+    protected ServoHandler arm;
+    protected ServoHandler claw;
 
     // Second intake servos
-    protected final DcMotorExHandler slide1;
-    protected final DcMotorExHandler slide2;
-    protected final ServoHandler slideArm;
-    protected final CRServo leftRoller;
-    protected final CRServo rightRoller;
+    protected DcMotorExHandler slide1;
+    protected DcMotorExHandler slide2;
+    protected ServoHandler slideArm;
+    protected CRServo leftRoller;
+    protected CRServo rightRoller;
 
     protected OpenCvCamera camera;
 
@@ -47,29 +45,29 @@ public abstract class RobotBase extends LinearOpMode {
 
 
 
-    public RobotBase() {
+    public void init() {
 
-        this.rf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rf_drive"));
-        this.rb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rb_drive"));
-        this.lf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lf_drive"));
-        this.lb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lb_drive"));
+        this.rf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rf_drive"), false);
+        this.rb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rb_drive"), false);
+        this.lf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lf_drive"), false);
+        this.lb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lb_drive"), false);
 
-        this.lift = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lift"));
+//        this.lift = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lift"));
         this.arm = new ServoHandler(hardwareMap.get(Servo.class, "arm"));
         this.claw = new ServoHandler(hardwareMap.get(Servo.class, "claw"));
 
-        this.slide1 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide1"));
-        this.slide2 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide2"));
+//        this.slide1 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide1"));
+//        this.slide2 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide2"));
 
-        this.slideArm = new ServoHandler(hardwareMap.get(Servo.class, "slidearm"));
-        this.slideArm.setDirection(Servo.Direction.REVERSE);
+//        this.slideArm = new ServoHandler(hardwareMap.get(Servo.class, "slidearm"));
+//        this.slideArm.setDirection(Servo.Direction.REVERSE);
 
-        this.leftRoller = hardwareMap.get(CRServo.class, "leftroller");
-        this.rightRoller = hardwareMap.get(CRServo.class, "rightroller");
+//        this.leftRoller = hardwareMap.get(CRServo.class, "leftroller");
+//        this.rightRoller = hardwareMap.get(CRServo.class, "rightroller");
 
         this.lf_drive.setDirection(DcMotorSimple.Direction.REVERSE);
         this.lb_drive.setDirection(DcMotorSimple.Direction.REVERSE);
-        this.lift.setDirection(DcMotorSimple.Direction.REVERSE);
+//        this.lift.setDirection(DcMotorSimple.Direction.REVERSE);
 
         this.arm.scaleRange(0.75, 1);
         this.arm.min();

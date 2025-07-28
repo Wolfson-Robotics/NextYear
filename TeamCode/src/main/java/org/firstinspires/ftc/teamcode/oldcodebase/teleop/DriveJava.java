@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.oldcodebase.RobotBase;
 
-@TeleOp(name = "DriveJava")
+//@TeleOp(name = "DriveJava")
 public class DriveJava extends RobotBase {
 
     private double powerFactor = 0.7095;

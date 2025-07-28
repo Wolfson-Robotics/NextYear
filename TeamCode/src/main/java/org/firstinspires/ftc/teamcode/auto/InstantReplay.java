@@ -16,9 +16,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.firstinspires.ftc.teamcode.util.Async.sleep;
+
 @Autonomous(name = "InstantReplay", group = "Auto")
 public class InstantReplay extends RobotBase {
 
+    private List<HardwareSnapshot> mmSnapshots, omSnapshots;
+    private int initMMSize, initOMSize;
+    private final PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
 
     private List<HardwareSnapshot> parseLog(String type) {
 
@@ -81,12 +86,10 @@ public class InstantReplay extends RobotBase {
         return snapshots;
     }
 
-
     @Override
-    public void runOpMode() throws InterruptedException {
-
-        List<HardwareSnapshot> mmSnapshots = this.parseLog("mm");
-        List<HardwareSnapshot> omSnapshots = this.parseLog("om");
+    public void init() {
+        this.mmSnapshots = this.parseLog("mm");
+        this.omSnapshots = this.parseLog("om");
         if (mmSnapshots == null) {
             telemetry.addLine("MM snapshots could not be loaded, aborting");
             telemetry.update();
@@ -99,13 +102,17 @@ public class InstantReplay extends RobotBase {
             sleep(5000);
             return;
         }
-        int initMMSize = mmSnapshots.size(), initOMSize = omSnapshots.size();
+        this.initMMSize = mmSnapshots.size();
+        this.initOMSize = omSnapshots.size();
 
-        PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
         pTelem.addLine("Starting replay...");
         pTelem.update();
+    }
 
-        waitForStart();
+
+    @Override
+    public void start() {
+
         long start = System.nanoTime();
 
         Thread mmThread = new Thread(() -> {
@@ -121,7 +128,7 @@ public class InstantReplay extends RobotBase {
             pTelem.update();
 
             while (currentSnapshot.happened(System.nanoTime() - start)) {
-                idle();
+                Thread.yield();
             }
         });
 
@@ -138,15 +145,27 @@ public class InstantReplay extends RobotBase {
             pTelem.update();
 
             while (currentSnapshot.happened(System.nanoTime() - start)) {
-                idle();
+                Thread.yield();
             }
         });
 
         mmThread.start();
         omThread.start();
 
-        mmThread.join();
-        omThread.join();
+        try {
+            mmThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            omThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public void loop() {
 
     }
 

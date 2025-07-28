@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.oldcodebase.RobotBase;
 
-@TeleOp(name = "TestDriveJavaOld", group = "Auto")
+//@TeleOp(name = "TestDriveJavaOld", group = "Auto")
 public class TestDriveJavaOld extends RobotBase {
 
     private double powerFactor = 1.25;

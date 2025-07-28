@@ -21,7 +21,7 @@ import java.util.Map;
  * Gamepad2 Arm
  * author: WolfsonRobotics
  */
-@TeleOp(name = "debugjava")
+//@TeleOp(name = "debugjava")
 public class DebugJava extends RobotBase {
     private ServoSettings servoSettings = new ServoSettings();
     private Map<String, ServoSettings> servoPositions = new HashMap<>();

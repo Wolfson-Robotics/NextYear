@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop.drive;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.FileLogger;
 import org.firstinspires.ftc.teamcode.HardwareSnapshot;
@@ -32,8 +33,8 @@ import android.os.Environment;
 public class DebugJava extends DriveJava {
 
 
-    private final List<DcMotorExHandler> movementMotors = List.of(lf_drive, lb_drive, rf_drive, lb_drive);
-    private final List<HardwareComponentHandler<?>> otherDevices = List.of(lift, arm, slide1, slide2, slideArm, claw);
+    private List<DcMotorExHandler> movementMotors;
+    private List<HardwareComponentHandler<?>> otherDevices;
     private final Map<DcMotorExHandler, Double> strictMMOffsets = new HashMap<>();
 
 
@@ -74,7 +75,11 @@ public class DebugJava extends DriveJava {
 
 
     @Override
-    public void predrive() {
+    public void init() {
+        super.init();
+        this.movementMotors = List.of(lf_drive, lb_drive, rf_drive, lb_drive);
+        this.otherDevices = List.of(lift, arm, /*slide1, slide2,*/ slideArm, claw);
+
         telemetry.addLine("Initiating debug pipeline...");
 
         movementMotors.forEach(DcMotorExHandler::resetEncoder);
@@ -141,12 +146,22 @@ public class DebugJava extends DriveJava {
                     strictMode.equals("STRAIGHT") ? 0 : gamepad1.right_stick_x,
                     strictMode.equals("TURN") ? 0 : gamepad1.left_stick_x);
         } else if (movementMode.equals("FREE")) {
-            runTasksAsync(
-                    () -> moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x),
-                    this::logFreeMM
-            );
+//            moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x);
+//            this.logFreeMM();
+//            runTasksAsync(
+//                    () -> moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x),
+//                    this::logFreeMM
+//            );
         }
-        bubbleListeners(omListeners);
+       if (gamepad1.right_bumper) {
+           this.lf_drive.setPower(0.3);
+           this.lb_drive.setPower(0.3);
+           this.rb_drive.setPower(0.3);
+           this.rf_drive.setPower(0.3);
+           sleep(200);
+           this.rf_drive.setPower(0);
+       }
+//        bubbleListeners(omListeners);
 
 
         telemetry.addLine("Manual:");
@@ -166,22 +181,24 @@ public class DebugJava extends DriveJava {
     }
 
     @Override
-    public void postdrive() {
+    public void stop() {
         logTask.cancel(true);
         logScheduler.shutdownNow();
+
         this.log();
         this.mmLogger.close();
         this.omLogger.close();
+
         telemetry.addLine("Logger close");
         telemetry.update();
-        super.postdrive();
+        super.stop();
+        super.terminateOpModeNow();
     }
 
 
 
 
     public void log() {
-        // For loop instead of streams to catch errors
         for (HardwareSnapshot mmSnapshot : mmLogs) {
             try {
                 mmLogger.logData(mmSnapshot.serialize());
@@ -220,11 +237,13 @@ public class DebugJava extends DriveJava {
 
     private void logFreeMM() {
         HardwareSnapshot mmState = new HardwareSnapshot(movementMotors).offset(startTime);
-        if (this.lastMMState.equals(mmState)) return;
-
-        this.lastMMState.end();
+        if (this.lastMMState != null) {
+            if (this.lastMMState.equals(mmState)) return;
+            this.lastMMState.end();
+            mmLogs.add(this.lastMMState);
+        }
         this.lastMMState = mmState;
-        mmLogs.add(this.lastMMState);
+
     }
 
     private void startStrictMM() {

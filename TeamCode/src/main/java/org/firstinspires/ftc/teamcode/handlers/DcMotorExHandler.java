@@ -7,6 +7,7 @@ import static com.qualcomm.robotcore.hardware.DcMotorSimple.Direction;
 
 import org.firstinspires.ftc.teamcode.util.IntegerBounds;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
@@ -14,53 +15,193 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     private int lowerPos = Integer.MIN_VALUE;
     private int upperPos = Integer.MAX_VALUE;
 
-    private Map<IntegerBounds, Double> speedMap;
+    private Map<IntegerBounds, Double> speedMap = new HashMap<>();
 
-    private final int startPos = 0;
-    private boolean isPowered = false;
-    private double lastPoweredPos = 0;
+    private final int startPos;
+    // Manual control runtime variables
+    private boolean stasisAchieved = false, lowerLimited = false, upperLimited = false, setMode = false, startedMoving = false;
+    private double lastPoweredPos;
 
+    // todo: make this dynamic
+    private int limitTolerance = 5;
+    private boolean runWithEncoder;
 
-    public DcMotorExHandler(DcMotorEx device) {
+    private DcMotor.RunMode deviceMode;
+
+    // The "hasEncoder" variable does not *necessarily* (although generally) imply that
+    // the motor does not physically have an encoder linked to it; it can simply indicate
+    // that the caller wants the mechanisms that control the motor's position depending on
+    // its encoder values to be disabled.
+    public DcMotorExHandler(DcMotorEx device, boolean hasEncoder) {
         super(device);
         device.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        this.startPos = device.getCurrentPosition();
+        this.lastPoweredPos = device.getCurrentPosition();
+        this.runWithEncoder = hasEncoder;
+        this.deviceMode = device.getMode();
+    }
+    public DcMotorExHandler(DcMotorEx device) {
+        this(device, true);
     }
 
 
-    private void driveMotor(double targetPosition, double power) {
+    private synchronized void driveMotor(double targetPosition, double power) {
+        if (getPosition() == targetPosition) {
+            this.device.setMode(this.deviceMode);
+            return;
+        }
         this.device.setTargetPosition((int) targetPosition);
+        if (this.device.getMode() != DcMotor.RunMode.RUN_TO_POSITION) {
+            this.deviceMode = this.device.getMode();
+        }
         this.device.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        this.device.setPower(targetPosition > getPosition() ? power : -power);
+        this.device.setPower(powerDir(targetPosition, power));
     }
-    private void driveMotor(double targetPosition) {
+    private synchronized void driveMotor(double targetPosition) {
         driveMotor(targetPosition, 1);
     }
 
-    public boolean limit() {
+    private int dirMult() {
+        return getDirection() == Direction.REVERSE ? -1 : 1;
+    }
+    private double powerDir(double targetPosition, double mult) {
+        return -dirMult() * (targetPosition > getPosition() ? mult : -mult);
+    }
+    private double powerDir(double targetPosition) {
+        return powerDir(targetPosition, 1);
+    }
+    private boolean towardsLower(double power) {
+        return (dirMult()*power) < 0;
+    }
+    private boolean towardsUpper(double power) {
+        return (dirMult()*power) > 0;
+    }
+
+    public synchronized boolean lLim() {
+        if (getPosition() <= this.lowerPos) {
+            driveMotor(this.lowerPos, 0.05);
+            return true;
+        }
+        return false;
+    }
+    public synchronized boolean uLim() {
+        if (getPosition() >= this.upperPos) {
+            driveMotor(this.upperPos, 0.05);
+            return true;
+        }
+        return false;
+    }
+    public synchronized boolean limit() {
+        if (posWithin()) {
+            return false;
+        }
+        if (getPosition() <= this.lowerPos) {
+            driveMotor(this.lowerPos, 0.05);
+        } else if (getPosition() >= this.upperPos) {
+            driveMotor(this.upperPos, 0.05);
+        }
+        return true;
+    }
+    public synchronized boolean limit(double power) {
         if (posWithin()) {
             return false;
         }
         if (getPosition() < this.lowerPos) {
-            driveMotor(this.lowerPos);
+            driveMotor(this.lowerPos, power);
         } else if (getPosition() > this.upperPos) {
-            driveMotor(this.upperPos);
+            driveMotor(this.upperPos, power);
+        } else {
+            return false;
         }
         return true;
     }
 
-    public void setPower(double power) {
+    public synchronized boolean outOfLowerLimit() {
+        return getPosition() < this.lowerPos;
+    }
+    public synchronized boolean isAtLowerLimit() {
+        return Math.abs(getPosition() - this.lowerPos) <= limitTolerance;
+    }
+    public synchronized boolean isOrOutOfLowerLimit() {
+        return outOfLowerLimit() || isAtLowerLimit();
+    }
+    public synchronized boolean outOfUpperLimit() {
+        return getPosition() > this.upperPos;
+    }
+    public synchronized boolean isAtUpperLimit() {
+        return Math.abs(getPosition() - this.upperPos) <= limitTolerance;
+    }
+    public synchronized boolean isOrOutOfUpperLimit() {
+        return outOfUpperLimit() || isAtUpperLimit();
+    }
+    public synchronized boolean outOfLimit() {
+        return outOfLowerLimit() || outOfUpperLimit();
+    }
+    public synchronized boolean isAtLimit() {
+        return isAtLowerLimit() || isAtUpperLimit();
+    }
+    public synchronized boolean isOrOutOfLimit() {
+        return outOfLimit() || isAtLimit();
+    }
+
+
+
+    public synchronized void zeroPower() {
+        if (!this.runWithEncoder || !this.startedMoving) {
+            device.setPower(0);
+            return;
+        }
+        this.setMode = false;
+        if (!this.stasisAchieved && !this.lowerLimited && !this.upperLimited) {
+            driveMotor(this.lastPoweredPos, 0.05);
+            this.stasisAchieved = true;
+        }
+    }
+    public synchronized void setPower(double power) {
         if (power == 0) {
-            if (this.isPowered) {
-                limit();
-                this.isPowered = false;
-                this.lastPoweredPos = getPosition();
-            }
-            driveMotor(this.lastPoweredPos);
+            zeroPower();
+            return;
         }
 
-        this.isPowered = true;
-        if (limit()) {
-            return;
+        if (this.startedMoving && this.runWithEncoder && towardsLower(power)) {
+            if (this.lowerLimited && isAtLowerLimit()) return;
+            if (isOrOutOfLowerLimit()) {
+//                limit();
+                this.lastPoweredPos = this.lowerPos;
+                this.setMode = false;
+                this.upperLimited = false;
+                if (!this.lowerLimited) {
+                    driveMotor(this.lowerPos, 0.05);
+                    this.lowerLimited = true;
+                }
+                return;
+            }
+        }
+        else if (this.startedMoving && this.runWithEncoder && towardsUpper(power)) {
+            if (this.upperLimited && isAtUpperLimit()) return;
+            if (isOrOutOfUpperLimit()) {
+//                limit();
+                this.lastPoweredPos = this.upperPos;
+                this.setMode = false;
+                this.lowerLimited = false;
+                if (!this.upperLimited) {
+                    driveMotor(this.upperPos, 0.05);
+                    this.upperLimited = true;
+                }
+                return;
+            }
+        }
+
+        this.startedMoving = true;
+        this.lowerLimited = false;
+        this.upperLimited = false;
+        this.stasisAchieved = false;
+
+        this.lastPoweredPos = getPosition();
+
+        if (!this.setMode) {
+            this.device.setMode(this.deviceMode);
+            this.setMode = true;
         }
         if (!this.speedMap.isEmpty()) {
             this.speedMap.forEach((bounds, mult) -> {
@@ -68,33 +209,52 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
             });
         } else {
             this.device.setPower(power);
+            this.lastPoweredPos = getPosition();
         }
     }
 
-    public void setPosition(double position) {
+    public synchronized void setPosition(double position) {
         this.setPosition(position, 1);
     }
-    public void setPosition(double position, double power) {
+    public synchronized void setPosition(double position, double power) {
         if (!posWithin(position)) return;
-        driveMotor((int) position, power);
+        this.device.setMode(this.deviceMode);
+        // TODO: UNCOMMENT
+//        driveMotor((int) position, power);
         while (getPosition() != position) {
             // Same method that idle() in LinearOpMode uses
             Thread.yield();
         }
     }
 
-    public void resetEncoder() {
+    public synchronized void resetEncoder() {
         this.device.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
     }
-    public void setDirection(Direction direction) {
+    public synchronized void setDirection(Direction direction) {
         this.device.setDirection(direction);
+    }
+    // TODO: Possibly merge tripEncoder and disableEncoder due to potential similarity of intents
+    // In case the encoder stops working, add a failsafe so that under the appropriate circumstances (such as during a match),
+    // we may bypass the mechanisms controlling the motor's position which would stop functioning correctly.
+    public synchronized void tripEncoder() {
+        this.disableEncoder();
+        this.lowerLimited = false;
+        this.upperLimited = false;
+        this.stasisAchieved = false;
+        this.startedMoving = true;
+    }
+    public synchronized void disableEncoder() {
+        this.runWithEncoder = false;
+    }
+    public synchronized void enableEncoder() {
+        this.runWithEncoder = true;
     }
 
 
     public boolean posWithin(double position) {
         return this.lowerPos <= position && position <= this.upperPos;
     }
-    private boolean posWithin() {
+    private synchronized boolean posWithin() {
         return posWithin(getPosition());
     }
 
@@ -103,16 +263,18 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         this.speedMap = speedMap;
     }
     public void setPositionBounds(int lowerPos, int upperPos) {
-        this.lowerPos = lowerPos;
-        this.upperPos = upperPos;
+        this.lowerPos = Math.min(lowerPos, upperPos) + this.startPos;
+        this.upperPos = Math.max(lowerPos, upperPos) + this.startPos;
     }
 
-    public double getPower() {
+    public synchronized double getPower() {
         return this.device.getPower();
     }
-
-    public double getPosition() {
+    public synchronized double getPosition() {
         return this.device.getCurrentPosition();
+    }
+    public synchronized DcMotorEx.Direction getDirection() {
+        return this.device.getDirection();
     }
 
 }

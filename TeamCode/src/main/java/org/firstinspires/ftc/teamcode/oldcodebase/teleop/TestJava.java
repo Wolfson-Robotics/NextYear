@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.oldcodebase.RobotBase;
 
-@TeleOp(name = "TestJava")
+//@TeleOp(name = "TestJava")
 public class TestJava extends RobotBase {
 
     @Override
