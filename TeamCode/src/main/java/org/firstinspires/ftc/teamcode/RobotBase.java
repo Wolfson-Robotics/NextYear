@@ -9,12 +9,16 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.Camera;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.stream.CameraStreamSource;
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
+import org.firstinspires.ftc.teamcode.handlers.camera.CameraHandler;
+import org.firstinspires.ftc.teamcode.handlers.camera.OpenCvCameraHandler;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
@@ -39,7 +43,7 @@ public abstract class RobotBase extends OpMode {
     protected CRServo leftRoller;
     protected CRServo rightRoller;
 
-    protected OpenCvCamera camera;
+    protected CameraHandler<? extends CameraStreamSource> camera;
 
     protected final String storagePath = Environment.getExternalStorageDirectory().getPath();
     protected final String logsPath = storagePath + "/Logs/";
@@ -96,32 +100,6 @@ public abstract class RobotBase extends OpMode {
             }
             HandlerMap.put(handler.getName(), handler);
         }
-    }
-
-
-
-    protected void initCamera() {
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        this.camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
-        // TODO: Set sample pipeline here later
-//        this.pixelDetection = new PixelDetection(this.blue);
-//        camera.setPipeline(pixelDetection);
-
-        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
-        {
-            @Override
-            public void onOpened()
-            {
-                camera.startStreaming(432,240, OpenCvCameraRotation.UPRIGHT);
-            }
-
-            @Override
-            public void onError(int errorCode) {
-                telemetry.addData("Camera error code:", errorCode);
-                telemetry.update();
-            }
-        });
-
     }
 
     protected boolean isControlled(double control) {
