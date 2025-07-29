@@ -36,18 +36,6 @@ public class DriveJava extends RobotBase {
 //        thread.start();
     }
 
-    // make dynamic based on voltage later
-    int powerFactor = 1;
-    protected void moveBot(float vertical, float pivot, float horizontal) {
-//        pivot *= 0.6;
-        pivot *= 0.855f;
-        rf_drive.setPower(powerFactor * (-pivot + (vertical - horizontal)));
-        rb_drive.setPower(powerFactor * (-pivot + vertical + horizontal));
-        lf_drive.setPower(powerFactor * (pivot + vertical + horizontal));
-        lb_drive.setPower(powerFactor * (pivot + (vertical - horizontal)));
-    }
-
-
     @Override
     public void init() {
 

@@ -106,5 +106,31 @@ public abstract class RobotBase extends OpMode {
         return Math.abs(control) > 0.1;
     }
 
+    // make dynamic based on voltage later
+    double powerFactor = 1.;
+    protected void moveBot(float vertical, float pivot, float horizontal) {
+//        pivot *= 0.6;
+        pivot *= 0.855f;
+        double rightFrontPower = powerFactor * (-pivot + (vertical - horizontal));
+        double rightBackPower = powerFactor * (-pivot + vertical + horizontal);
+        double leftFrontPower = powerFactor * (pivot + vertical + horizontal);
+        double leftBackPower = powerFactor * (pivot + (vertical - horizontal));
+
+        // Normalize wheel powers to be less than 1.0, just in case.
+        double max = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
+        max = Math.max(max, Math.abs(leftBackPower));
+        max = Math.max(max, Math.abs(rightBackPower));
+        if (max > 1.0) {
+            leftFrontPower /= max;
+            rightFrontPower /= max;
+            leftBackPower /= max;
+            rightBackPower /= max;
+        }
+
+        rf_drive.setPower(rightFrontPower);
+        rb_drive.setPower(rightBackPower);
+        lf_drive.setPower(leftFrontPower);
+        lb_drive.setPower(leftBackPower);
+    }
 
 }
