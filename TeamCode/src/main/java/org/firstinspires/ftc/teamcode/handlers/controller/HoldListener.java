@@ -2,12 +2,12 @@ package org.firstinspires.ftc.teamcode.handlers.controller;
 
 import java.util.function.Supplier;
 
-public class ToggleListener extends ControllerListener {
+public class HoldListener extends ControllerListener {
 
     private boolean on = false;
     private final Runnable offFn;
 
-    private ToggleListener(Supplier<Boolean> control, Runnable onFn, Runnable offFn) {
+    private HoldListener(Supplier<Boolean> control, Runnable onFn, Runnable offFn) {
         super(control, onFn);
         this.offFn = offFn;
     }
@@ -24,8 +24,8 @@ public class ToggleListener extends ControllerListener {
         }
     }
 
-    public static ToggleListener of(Supplier<Boolean> control, Runnable onFn, Runnable offFn) {
-        return new ToggleListener(control, onFn, offFn);
+    public static HoldListener of(Supplier<Boolean> control, Runnable onFn, Runnable offFn) {
+        return new HoldListener(control, onFn, offFn);
     }
 
 }

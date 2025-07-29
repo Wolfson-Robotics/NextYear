@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.handlers;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import org.firstinspires.ftc.teamcode.RobotBase;
 
 import static com.qualcomm.robotcore.hardware.DcMotorSimple.Direction;
 
@@ -28,20 +31,39 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
 
     private DcMotor.RunMode deviceMode;
 
+
+    private static HardwareMap hardwareMap;
+    public static void setHardwareMap(HardwareMap hardwareMap) {
+        DcMotorExHandler.hardwareMap = hardwareMap;
+    }
+
     // The "hasEncoder" variable does not *necessarily* (although generally) imply that
     // the motor does not physically have an encoder linked to it; it can simply indicate
     // that the caller wants the mechanisms that control the motor's position depending on
     // its encoder values to be disabled.
-    public DcMotorExHandler(DcMotorEx device, boolean hasEncoder) {
+    public DcMotorExHandler(String deviceName, DcMotorEx device, boolean hasEncoder) {
         super(device);
         device.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         this.startPos = device.getCurrentPosition();
         this.lastPoweredPos = device.getCurrentPosition();
         this.runWithEncoder = hasEncoder;
         this.deviceMode = device.getMode();
+        this.name = deviceName;
+    }
+    public DcMotorExHandler(String deviceName, DcMotorEx device) {
+        this(deviceName, device, true);
+    }
+    public DcMotorExHandler(DcMotorEx device, boolean hasEncoder) {
+        this("Unknown", device, hasEncoder);
     }
     public DcMotorExHandler(DcMotorEx device) {
         this(device, true);
+    }
+    public DcMotorExHandler(String deviceName, boolean hasEncoder) {
+        this(deviceName, hardwareMap.get(DcMotorEx.class, deviceName), hasEncoder);
+    }
+    public DcMotorExHandler(String deviceName) {
+        this(deviceName, true);
     }
 
 

@@ -1,4 +1,4 @@
-package  org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode;
 
 import android.os.Environment;
 
@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
@@ -47,14 +48,17 @@ public abstract class RobotBase extends OpMode {
 
     public void init() {
 
-        this.rf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rf_drive"), false);
-        this.rb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "rb_drive"), false);
-        this.lf_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lf_drive"), false);
-        this.lb_drive = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lb_drive"), false);
+        DcMotorExHandler.setHardwareMap(hardwareMap);
+        ServoHandler.setHardwareMap(hardwareMap);
+        this.rf_drive = new DcMotorExHandler("rf_drive", false);
+        this.rb_drive = new DcMotorExHandler("rb_drive", false);
+        this.lf_drive = new DcMotorExHandler("lf_drive", false);
+        this.lb_drive = new DcMotorExHandler("lb_drive", false);
 
 //        this.lift = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "lift"));
-        this.arm = new ServoHandler(hardwareMap.get(Servo.class, "arm"));
-        this.claw = new ServoHandler(hardwareMap.get(Servo.class, "claw"));
+        this.arm = new ServoHandler("arm");
+        this.claw = new ServoHandler("claw");
+
 
 //        this.slide1 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide1"));
 //        this.slide2 = new DcMotorExHandler(hardwareMap.get(DcMotorEx.class, "slide2"));

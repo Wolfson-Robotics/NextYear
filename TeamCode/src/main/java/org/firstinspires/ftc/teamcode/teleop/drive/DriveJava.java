@@ -140,7 +140,8 @@ public class DriveJava extends RobotBase {
     @Override
     public void loop() {
         for (ControllerHandler handle : handlers) handle.handle();
-        bubbleListeners(this.listeners);
+        // TODO: Uncomment or replace with other mechanism
+//        bubbleListeners(this.listeners);
         this.drive();
         // TODO: Implement moveBot
 //            moveBot(-gamepad1.left_stick_y, (gamepad1.right_stick_x), gamepad1.left_stick_x);
@@ -148,8 +149,10 @@ public class DriveJava extends RobotBase {
 
     @Override
     public void stop() {
-        this.cThread.cancel(true);
-        this.cThreadExec.shutdownNow();
+        if (this.cThread != null) {
+            this.cThread.cancel(true);
+            this.cThreadExec.shutdownNow();
+        }
 //        this.cThread.interrupt();
 //        threads.forEach(Thread::interrupt);
     }

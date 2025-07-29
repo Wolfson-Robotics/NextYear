@@ -1,20 +1,41 @@
 package org.firstinspires.ftc.teamcode;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileLock;
 import java.util.List;
+import java.util.Random;
 
 public class FileLogger {
 
-    private final FileWriter writer;
+    private FileWriter writer;
     private int logNum = 1;
 
+    private final File file;
+    private final boolean append;
+
+
+    private void initWriter() throws IOException {
+//        try (FileLock lock = new RandomAccessFile(new File(filePath), "rw").getChannel().tryLock()) {
+//        } catch (IOException ignored) {}
+        this.writer = new FileWriter(file, append);
+    }
+
+    public FileLogger(File file, boolean append) throws IOException {
+        this.file = file;
+        this.append = append;
+        initWriter();
+    }
+    public FileLogger(File file) throws IOException {
+        this(file, true);
+    }
     public FileLogger(String filePath) throws IOException {
         this(filePath, true);
     }
-
     public FileLogger(String filePath, boolean append) throws IOException {
-        this.writer = new FileWriter(filePath, append);
+        this(new File(filePath), append);
     }
 
     public synchronized void logData(String data) throws IOException {
@@ -29,12 +50,20 @@ public class FileLogger {
         logData(logNum + ": " + data);
         logNum++;
     }
+    // The FileWriter handle tends to die over time, so it is re-instantiated in that case.
     public synchronized void logRaw(String data) throws IOException {
+        try {
+            writer.flush();
+        } catch (IOException e) {
+            initWriter();
+        }
         writer.write(data);
+        writer.flush();
     }
 
     public synchronized void close() {
         try {
+            writer.flush();
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();

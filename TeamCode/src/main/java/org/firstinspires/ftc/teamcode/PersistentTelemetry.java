@@ -50,23 +50,46 @@ public class PersistentTelemetry {
             this.setLine(foundLine, content);
         }
     }
-
-    public String getLine(int lineIndex) {
-        return this.telemetryLines.get(lineIndex);
+    public void appendLine(int lineIndex, String content) {
+        this.telemetryLines.set(lineIndex, this.telemetryLines.get(lineIndex) + content);
+    }
+    public void appendLine(String searchContent, String content) {
+        int foundLine = findLine(searchContent);
+        if (foundLine == -1) {
+            this.addLine(content);
+        } else {
+            this.appendLine(foundLine, content);
+        }
     }
 
+    public void addData(String caption, String data) {
+        addLine(caption + ": " + data);
+    }
     public void addData(String caption, int data) {
         addLine(caption + ": " + data);
     }
     public void addData(String caption, double data) {
         addLine(caption + ": " + data);
     }
+    public void addData(String caption, boolean data) {
+        addLine(caption + ": " + data);
+    }
 
+    public void setData(String caption, String data) {
+        setLine(caption, caption + ": " + data);
+    }
     public void setData(String caption, int data) {
         setLine(caption, caption + ": " + data);
     }
     public void setData(String caption, double data) {
         setLine(caption, caption + ": " + data);
+    }
+    public void setData(String caption, boolean data) {
+        setLine(caption, caption + ": " + data);
+    }
+
+    public String getLine(int lineIndex) {
+        return this.telemetryLines.get(lineIndex);
     }
 
     public void removeLine(String lineContent) {

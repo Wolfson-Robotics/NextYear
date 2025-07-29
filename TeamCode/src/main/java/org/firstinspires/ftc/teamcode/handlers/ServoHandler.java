@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.handlers;
 
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.util.GeneralUtils;
@@ -12,11 +13,17 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
     private double driveIncrement = 0.01;
     private long speed = 20;
 
+    private static HardwareMap hardwareMap;
+    public static void setHardwareMap(HardwareMap hardwareMap) {
+        ServoHandler.hardwareMap = hardwareMap;
+    }
 
     public ServoHandler(Servo device) {
         super(device);
     }
-
+    public ServoHandler(String deviceName) {
+        this(hardwareMap.get(Servo.class, deviceName));
+    }
 
     public void setPosition(double position) {
         if (!posWithin(position)) return;

@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareDevice;
 
 public abstract class HardwareComponentHandler<T extends HardwareDevice> {
 
+    protected String name;
     protected final T device;
 
     public HardwareComponentHandler(T device) {
@@ -32,14 +33,21 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
         return this.device;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
     public String getName() {
-        String connectionInfo = device.getConnectionInfo();
-        String[] parts = connectionInfo.split(":");
-        if (parts.length >= 2) {
-            return parts[1];
-        } else {
-            return "Unknown";
-        }
+        return this.name;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof HardwareComponentHandler)) return false;
+        return device.equals(((HardwareComponentHandler<?>) obj).device);
+    }
+    @Override
+    public int hashCode() {
+        return device.hashCode();
     }
 
 }
