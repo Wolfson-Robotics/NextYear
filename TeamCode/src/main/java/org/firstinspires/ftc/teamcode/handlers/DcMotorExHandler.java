@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode.handlers;
 
+import static com.qualcomm.robotcore.hardware.DcMotorSimple.Direction;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-
-import org.firstinspires.ftc.teamcode.RobotBase;
-
-import static com.qualcomm.robotcore.hardware.DcMotorSimple.Direction;
 
 import org.firstinspires.ftc.teamcode.util.IntegerBounds;
 
@@ -37,16 +35,16 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         DcMotorExHandler.hardwareMap = hardwareMap;
     }
 
-    // The "hasEncoder" variable does not *necessarily* (although generally) imply that
+    // The "runWithEncoder" variable does not *necessarily* (although generally) imply that
     // the motor does not physically have an encoder linked to it; it can simply indicate
     // that the caller wants the mechanisms that control the motor's position depending on
     // its encoder values to be disabled.
-    public DcMotorExHandler(String deviceName, DcMotorEx device, boolean hasEncoder) {
+    public DcMotorExHandler(String deviceName, DcMotorEx device, boolean runWithEncoder) {
         super(device);
         device.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         this.startPos = device.getCurrentPosition();
         this.lastPoweredPos = device.getCurrentPosition();
-        this.runWithEncoder = hasEncoder;
+        this.runWithEncoder = runWithEncoder;
         this.deviceMode = device.getMode();
         this.name = deviceName;
     }
@@ -59,8 +57,8 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     public DcMotorExHandler(DcMotorEx device) {
         this(device, true);
     }
-    public DcMotorExHandler(String deviceName, boolean hasEncoder) {
-        this(deviceName, hardwareMap.get(DcMotorEx.class, deviceName), hasEncoder);
+    public DcMotorExHandler(String deviceName, boolean runWithEncoder) {
+        this(deviceName, hardwareMap.get(DcMotorEx.class, deviceName), runWithEncoder);
     }
     public DcMotorExHandler(String deviceName) {
         this(deviceName, true);
@@ -241,8 +239,7 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     public synchronized void setPosition(double position, double power) {
         if (!posWithin(position)) return;
         this.device.setMode(this.deviceMode);
-        // TODO: UNCOMMENT
-//        driveMotor((int) position, power);
+        driveMotor((int) position, power);
         while (getPosition() != position) {
             // Same method that idle() in LinearOpMode uses
             Thread.yield();

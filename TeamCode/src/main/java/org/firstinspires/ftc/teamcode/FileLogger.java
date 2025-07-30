@@ -3,10 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
 import java.util.List;
-import java.util.Random;
 
 public class FileLogger {
 
@@ -18,8 +15,6 @@ public class FileLogger {
 
 
     private void initWriter() throws IOException {
-//        try (FileLock lock = new RandomAccessFile(new File(filePath), "rw").getChannel().tryLock()) {
-//        } catch (IOException ignored) {}
         this.writer = new FileWriter(file, append);
     }
 

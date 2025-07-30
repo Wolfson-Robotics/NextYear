@@ -2,21 +2,23 @@ package org.firstinspires.ftc.teamcode;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class PersistentTelemetry {
 
-    private Telemetry telemetry;
-    private List<String> telemetryLines = new ArrayList<>();
+    private final Telemetry telemetry;
+    private List<Supplier<String>> telemetryLines = new CopyOnWriteArrayList<>();
 
     public PersistentTelemetry(Telemetry telemetry, List<String> telemetryLines) {
         this.telemetry = telemetry;
-        this.telemetryLines = telemetryLines;
+        this.telemetryLines = telemetryLines.stream().map(s -> (Supplier<String>) () -> s).collect(Collectors.toList());
     }
     public PersistentTelemetry(Telemetry telemetry, String[] telemetryLines) {
-        this(telemetry, new ArrayList<>(Arrays.asList(telemetryLines)));
+        this(telemetry, Arrays.asList(telemetryLines));
     }
     public PersistentTelemetry(Telemetry telemetry) {
         this.telemetry = telemetry;
@@ -27,7 +29,7 @@ public class PersistentTelemetry {
         // iterate backwards because we want to modify most recent line not older ones
         searchContent = searchContent.trim().toLowerCase();
         for (int lineIndex = (this.telemetryLines.size() - 1); lineIndex >= 0; lineIndex--) {
-            if (this.telemetryLines.get(lineIndex).trim().toLowerCase().contains(searchContent)) {
+            if (getLine(lineIndex).trim().toLowerCase().contains(searchContent)) {
                 return lineIndex;
             }
         }
@@ -35,14 +37,20 @@ public class PersistentTelemetry {
     }
 
 
+    public void addLine(Supplier<String> line) {
+        this.telemetryLines.add(line);
+    }
     public void addLine(String content) {
-        this.telemetryLines.add(content);
+        addLine(() -> content);
     }
 
-    public void setLine(int lineIndex, String content) {
+    public void setLine(int lineIndex, Supplier<String> content) {
         this.telemetryLines.set(lineIndex, content);
     }
-    public void setLine(String searchContent, String content) {
+    public void setLine(int lineIndex, String content) {
+        this.telemetryLines.set(lineIndex, () -> content);
+    }
+    public void setLine(String searchContent, Supplier<String> content) {
         int foundLine = findLine(searchContent);
         if (foundLine == -1) {
             this.addLine(content);
@@ -50,16 +58,27 @@ public class PersistentTelemetry {
             this.setLine(foundLine, content);
         }
     }
-    public void appendLine(int lineIndex, String content) {
-        this.telemetryLines.set(lineIndex, this.telemetryLines.get(lineIndex) + content);
+    public void setLine(String searchContent, String content) {
+        this.setLine(searchContent, () -> content);
     }
-    public void appendLine(String searchContent, String content) {
+    public void appendLine(int lineIndex, Supplier<String> content) {
+        // Capture old Supplier to prevent recursion
+        Supplier<String> oldLine = getLineRaw(lineIndex);
+        this.telemetryLines.set(lineIndex, () -> oldLine.get() + content.get());
+    }
+    public void appendLine(int lineIndex, String content) {
+        this.appendLine(lineIndex, () -> content);
+    }
+    public void appendLine(String searchContent, Supplier<String> content) {
         int foundLine = findLine(searchContent);
         if (foundLine == -1) {
             this.addLine(content);
         } else {
             this.appendLine(foundLine, content);
         }
+    }
+    public void appendLine(String searchContent, String content) {
+        this.appendLine(searchContent, () -> content);
     }
 
     public void addData(String caption, String data) {
@@ -74,6 +93,9 @@ public class PersistentTelemetry {
     public void addData(String caption, boolean data) {
         addLine(caption + ": " + data);
     }
+    public void addData(String caption, Supplier<?> data) {
+        addLine(() -> caption + ": " + data.get());
+    }
 
     public void setData(String caption, String data) {
         setLine(caption, caption + ": " + data);
@@ -87,9 +109,15 @@ public class PersistentTelemetry {
     public void setData(String caption, boolean data) {
         setLine(caption, caption + ": " + data);
     }
+    public void setData(String caption, Supplier<?> data) {
+        setLine(caption, () -> caption + ": " + data.get());
+    }
 
-    public String getLine(int lineIndex) {
+    private Supplier<String> getLineRaw(int lineIndex) {
         return this.telemetryLines.get(lineIndex);
+    }
+    public String getLine(int lineIndex) {
+        return getLineRaw(lineIndex).get();
     }
 
     public void removeLine(String lineContent) {
@@ -97,9 +125,8 @@ public class PersistentTelemetry {
         if (foundLine != -1) this.telemetryLines.remove(foundLine);
     }
 
-
     public void update() {
-        this.telemetryLines.forEach(telemetryLine -> this.telemetry.addLine(telemetryLine));
+        for (Supplier<String> line : telemetryLines) this.telemetry.addLine(line.get());
         this.telemetry.update();
     }
     public void clear() {

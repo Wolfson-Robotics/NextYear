@@ -7,25 +7,26 @@ import org.firstinspires.ftc.teamcode.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.PersistentTelemetry;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
-import org.firstinspires.ftc.teamcode.handlers.controller.*;
+import org.firstinspires.ftc.teamcode.handlers.controller.ControllerListener;
+import org.firstinspires.ftc.teamcode.handlers.controller.HoldListener;
+import org.firstinspires.ftc.teamcode.handlers.controller.InitListener;
+import org.firstinspires.ftc.teamcode.handlers.controller.StickyListener;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.firstinspires.ftc.teamcode.util.Async.*;
 
 @TeleOp(name = "DebugJava")
 public class DebugJava extends DriveJava {
@@ -41,13 +42,12 @@ public class DebugJava extends DriveJava {
     );
     private final List<Supplier<Boolean>> otherListeners = List.of(
             () -> isControlled(gamepad2.left_stick_y), () -> isControlled(gamepad2.right_stick_y)
-                   , () -> gamepad2.dpad_left, () -> gamepad2.dpad_right
-                   , () -> isControlled(gamepad2.left_trigger), () -> isControlled(gamepad2.right_trigger)
-                   , () -> gamepad2.left_bumper, () -> gamepad2.right_bumper
+            , () -> gamepad2.dpad_left, () -> gamepad2.dpad_right
+            , () -> isControlled(gamepad2.left_trigger), () -> isControlled(gamepad2.right_trigger)
+            , () -> gamepad2.left_bumper, () -> gamepad2.right_bumper
     );
     private final List<ControllerListener> omListeners = List.of(
-            InitListener.of(() -> otherListeners.stream().anyMatch(Supplier::get), this::startOM),
-            FinishListener.of(() -> otherListeners.stream().anyMatch(s -> !s.get()), this::logOM)
+            HoldListener.of(() -> otherListeners.stream().anyMatch(Supplier::get), this::startOM, this::logOM)
     );
 
 
@@ -57,22 +57,33 @@ public class DebugJava extends DriveJava {
     private boolean logEnabled = true;
     private long startTime = 0L;
 
-    private final List<HardwareSnapshot> mmLogs = new ArrayList<>();
-    private final List<HardwareSnapshot> omLogs = new ArrayList<>();
+    private final ConcurrentLinkedQueue<HardwareSnapshot> mmLogs = new ConcurrentLinkedQueue<>(), omLogs = new ConcurrentLinkedQueue<>();
     // Store last HardwareSnapshot in a separate variable so that it does not have
     // to be repeatedly retrieved as the last element from the mmLogs list
     private HardwareSnapshot lastMMState, lastOMState;
     private long mmStartTime = 0L, omStartTime = 0L;
 
+    private final AtomicInteger mmLogCounter = new AtomicInteger(0), omLogCounter = new AtomicInteger(0);
+
     private String mmName, omName;
-    private ScheduledExecutorService logScheduler;
-    private ScheduledFuture<?> logTask;
-    private static final long LOG_INTERVAL = 2;
+    private ExecutorService movementCapture;
 
     private final PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
-    
 
 
+
+    private void initLogThreads() {
+        if (this.movementCapture != null) return;
+        this.movementCapture = Executors.newFixedThreadPool(strictMMs.size() + omListeners.size());
+        for (ControllerListener l : strictMMs) movementCapture.submit(toPersistentThread(l::update));
+        for (ControllerListener l : omListeners) movementCapture.submit(toPersistentThread(l::update));
+    }
+    private void stopLogThreads() {
+        if (this.movementCapture != null) {
+            this.movementCapture.shutdownNow();
+            this.movementCapture = null;
+        }
+    }
 
     @Override
     public void init() {
@@ -84,14 +95,10 @@ public class DebugJava extends DriveJava {
         telemetry.addLine("Initiating debug pipeline...");
 
         movementMotors.forEach(DcMotorExHandler::resetEncoder);
-        this.listeners = List.of(
-                InitListener.of(() -> gamepad1.b, this::log)
-        );
-        this.logScheduler = Executors.newSingleThreadScheduledExecutor();
 
         String dateName = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).format(new Date());
         this.mmName = String.format(logsPath + "debug_mm_%s.txt", dateName);
-        this.omName = String.format(logsPath + "debug_mm_%s.txt", dateName);
+        this.omName = String.format(logsPath + "debug_om_%s.txt", dateName);
 
         // Populate PersistentTelemetry with lines
         pTelem.addLine("Manual:");
@@ -102,13 +109,16 @@ public class DebugJava extends DriveJava {
         pTelem.addLine("Manually log with B");
         pTelem.addLine("Enable log with right trigger, disable log with left trigger");
         pTelem.addLine("");
-        pTelem.addData("Movement mode",  movementMode);
-        pTelem.addData("Strict mode",  strictMode);
-        pTelem.addData("Current start", startTime);
-        pTelem.addData("Current other start", omStartTime);
+        pTelem.addData("Movement mode", () -> movementMode);
+        pTelem.addData("Strict mode", () -> strictMode);
+        pTelem.addData("Current start", () -> startTime);
+        pTelem.addData("Current other start", () -> omStartTime);
         pTelem.addLine(" ");
         pTelem.addLine(" ");
-        pTelem.addLine(" ");
+        pTelem.addData("Total MM snapshots taken", () -> mmLogCounter.get() + mmLogs.size());
+        pTelem.addData("Total OM snapshots taken", () -> omLogCounter.get() + omLogs.size());
+        pTelem.addData("MM snapshots logged", mmLogCounter::get);
+        pTelem.addData("OM snapshots logged", omLogCounter::get);
         pTelem.addLine(" ");
         pTelem.addLine("Runtime variables");
         pTelem.addLine("------------------------------");
@@ -118,21 +128,27 @@ public class DebugJava extends DriveJava {
     }
 
     @Override
+    public void start() {
+        super.start();
+        initLogThreads();
+    }
+
+    @Override
     public void drive() {
 
         if (isControlled(gamepad1.right_trigger)) {
+            initLogThreads();
             logEnabled = true;
         } else if (isControlled(gamepad1.left_trigger)) {
+            stopLogThreads();
             logEnabled = false;
         }
         if (!logEnabled) {
-            if (logTask != null) logTask.cancel(false);
             telemetry.addLine("Log disabled, press right trigger to enable");
-            telemetry.update();
+            telemetry.addLine("");
+//            telemetry.update();
+            super.drive();
             return;
-        }
-        if (logTask == null) {
-//            logTask = logScheduler.scheduleWithFixedDelay(this::log, 0, LOG_INTERVAL, TimeUnit.SECONDS);
         }
         if (startTime == 0L) {
             startTime = System.nanoTime();
@@ -161,9 +177,6 @@ public class DebugJava extends DriveJava {
 
         super.commonDrive();
         if (movementMode.equals("STRICT")) {
-//            bubbleListeners(strictMMs);
-            listeners.forEach(ControllerListener::update);
-            strictMMs.forEach(ControllerListener::update);
             moveBot(strictMode.equals("TURN") ? 0 : -gamepad1.left_stick_y,
                     strictMode.equals("STRAIGHT") ? 0 : gamepad1.right_stick_x,
                     strictMode.equals("TURN") ? 0 : gamepad1.left_stick_x);
@@ -175,35 +188,19 @@ public class DebugJava extends DriveJava {
 //                    this::logFreeMM
 //            );
         }
-       if (gamepad1.right_bumper) {
-           this.lf_drive.setPower(0.3);
-           this.lb_drive.setPower(0.3);
-           this.rb_drive.setPower(0.3);
-           this.rf_drive.setPower(0.3);
-           sleep(200);
-           this.rf_drive.setPower(0);
-       }
-//       if (this.logEnabled) log();
-//        bubbleListeners(omListeners);
-
-
         pTelem.update();
-
     }
 
     @Override
     public void stop() {
-//        logTask.cancel(true);
-//        logScheduler.shutdownNow();
-
-        telemetry.addLine("Logging finally");
+        telemetry.addLine("Logging one last time");
         telemetry.update();
         this.log();
 
         telemetry.addLine("Stopping");
         telemetry.update();
+        stopLogThreads();
         super.stop();
-//        super.terminateOpModeNow();
     }
 
 
@@ -213,9 +210,13 @@ public class DebugJava extends DriveJava {
         try {
             pTelem.appendLine("Manually log", ", logging mm");
             FileLogger mmLogger = new FileLogger(mmName);
-            for (HardwareSnapshot mmSnapshot : mmLogs) mmLogger.logData(mmSnapshot.serialize());
+            for (HardwareSnapshot mmSnapshot : mmLogs) {
+                mmLogger.logData(mmSnapshot.serialize());
+                mmLogCounter.incrementAndGet();
+            }
             mmLogger.close();
             pTelem.appendLine("Manually log", ", logged mm");
+            mmLogs.clear();
         } catch (IOException e) {
             telemetry.addLine("Failed to log movement data. Details:");
             e.printStackTrace();
@@ -224,16 +225,18 @@ public class DebugJava extends DriveJava {
         try {
             pTelem.appendLine("Manually log", ", logging om");
             FileLogger omLogger = new FileLogger(omName);
-            for (HardwareSnapshot omSnapshot : omLogs) omLogger.logData(omSnapshot.serialize());
+            for (HardwareSnapshot omSnapshot : omLogs) {
+                omLogger.logData(omSnapshot.serialize());
+                omLogCounter.incrementAndGet();
+            }
             omLogger.close();
             pTelem.appendLine("Manually log", ", logged om");
+            omLogs.clear();
         } catch (IOException e) {
             telemetry.addLine("Failed to log other movement data. Details:");
             e.printStackTrace();
         }
 //        pTelem.setLine("Manually log", "Manually log with B");
-        mmLogs.clear();
-        omLogs.clear();
     }
 
     private void startOM() {
@@ -242,9 +245,10 @@ public class DebugJava extends DriveJava {
 
     private void logOM() {
         HardwareSnapshot omState = new HardwareSnapshot(omStartTime, otherDevices).offset(startTime);
-        if (this.lastOMState.equals(omState)) return;
-
-        this.lastOMState.end();
+        if (this.lastOMState != null) {
+            if (this.lastOMState.equals(omState)) return;
+            this.lastOMState.end();
+        }
         this.lastOMState = omState;
         omLogs.add(this.lastOMState);
     }
@@ -278,6 +282,13 @@ public class DebugJava extends DriveJava {
         HardwareSnapshot freeMMState = new HardwareSnapshot(this.mmStartTime, freeMMPoses);
         freeMMState.end();
         mmLogs.add(freeMMState);
+    }
+
+
+    public List<ControllerListener> listeners() {
+        return List.of(
+                InitListener.of(() -> gamepad1.b, this::log)
+        );
     }
 
 }

@@ -1,27 +1,19 @@
 package org.firstinspires.ftc.teamcode;
 
+import static org.firstinspires.ftc.teamcode.util.Async.sleep;
+
 import android.os.Environment;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.Camera;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.stream.CameraStreamSource;
-import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
 import org.firstinspires.ftc.teamcode.handlers.camera.CameraHandler;
-import org.firstinspires.ftc.teamcode.handlers.camera.OpenCvCameraHandler;
-import org.openftc.easyopencv.OpenCvCamera;
-import org.openftc.easyopencv.OpenCvCameraFactory;
-import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.lang.reflect.Field;
 
@@ -102,9 +94,6 @@ public abstract class RobotBase extends OpMode {
         }
     }
 
-    protected boolean isControlled(double control) {
-        return Math.abs(control) > 0.1;
-    }
 
     // make dynamic based on voltage later
     double powerFactor = 1.;
@@ -132,5 +121,27 @@ public abstract class RobotBase extends OpMode {
         lf_drive.setPower(leftFrontPower);
         lb_drive.setPower(leftBackPower);
     }
+
+
+    protected Runnable toPersistentThread(Runnable fn) {
+        return () -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    fn.run();
+                } catch (Throwable t) {
+                    telemetry.addLine("Error in thread:");
+                    t.printStackTrace();
+                    telemetry.update();
+                    Thread.currentThread().interrupt();
+                }
+                sleep(10);
+            }
+        };
+    }
+
+    protected boolean isControlled(double control) {
+        return Math.abs(control) > 0.1;
+    }
+
 
 }

@@ -1,11 +1,12 @@
 package org.firstinspires.ftc.teamcode.teleop.drive;
 
+import static org.firstinspires.ftc.teamcode.util.Async.runTasksAsync;
+
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.RobotBase;
 import org.firstinspires.ftc.teamcode.handlers.controller.ControllerHandler;
 import org.firstinspires.ftc.teamcode.handlers.controller.ControllerListener;
-import static org.firstinspires.ftc.teamcode.util.Async.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,28 +14,50 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 @TeleOp(name = "DriveJava")
 public class DriveJava extends RobotBase {
 
     protected ControllerHandler[] handlers;
-    protected List<ControllerListener> listeners;
 
-    protected final ExecutorService cThreadExec = Executors.newSingleThreadExecutor();
+    protected ExecutorService cThreadExec;
     protected CompletableFuture<Void> cThread;
 
 
     protected void execListeners(List<ControllerListener> listeners) {
         runTasksAsync(listeners.stream().map(l -> (Runnable) l::update).collect(Collectors.toList()));
     }
-    protected void bubbleListeners(List<ControllerListener> listeners) {
-        if (cThread != null && !cThread.isDone()) return;
-        this.cThread = CompletableFuture.runAsync(() -> execListeners(listeners), cThreadExec);
-//        Thread thread = new Thread(() -> execListeners(listeners));
-//        threads.add(thread);
-//        thread.start();
+
+    protected static void bubbleListeners(ThreadPoolExecutor service, List<ControllerListener> listeners) {
+        if (listeners.isEmpty()) return;
+        for (ControllerListener l : listeners) service.submit(l::update);
     }
+    protected void bubbleListeners(List<ControllerListener> listeners) {
+        if (cThreadExec != null && !cThreadExec.isTerminated()) return;
+        if (listeners.isEmpty()) return;
+        this.cThreadExec = Executors.newFixedThreadPool(listeners.size());
+
+        CompletableFuture.allOf(
+                listeners.stream()
+                        .map(l -> CompletableFuture.runAsync(l::update, cThreadExec))
+                        .toArray(CompletableFuture[]::new)
+        ).thenRunAsync(() -> cThreadExec.shutdown(), cThreadExec);
+    }
+
+
+    // make dynamic based on voltage later
+    int powerFactor = 1;
+    protected void moveBot(float vertical, float pivot, float horizontal) {
+//        pivot *= 0.6;
+        pivot *= 0.855f;
+        rf_drive.setPower(powerFactor * (-pivot + (vertical - horizontal)));
+        rb_drive.setPower(powerFactor * (-pivot + vertical + horizontal));
+        lf_drive.setPower(powerFactor * (pivot + vertical + horizontal));
+        lb_drive.setPower(powerFactor * (pivot + (vertical - horizontal)));
+    }
+
 
     @Override
     public void init() {
@@ -55,8 +78,14 @@ public class DriveJava extends RobotBase {
                         Preset.of(() -> gamepad2.x, 0.5)
                 )*/
         };
-        this.listeners = new ArrayList<>();
 
+    }
+
+    @Override
+    public void start() {
+        if (listeners().isEmpty()) return;
+        this.cThreadExec = Executors.newFixedThreadPool(listeners().size());
+        for (ControllerListener l : listeners()) cThreadExec.submit(toPersistentThread(l::update));
     }
 
 
@@ -128,21 +157,17 @@ public class DriveJava extends RobotBase {
     @Override
     public void loop() {
         for (ControllerHandler handle : handlers) handle.handle();
-        // TODO: Uncomment or replace with other mechanism
-//        bubbleListeners(this.listeners);
         this.drive();
-        // TODO: Implement moveBot
-//            moveBot(-gamepad1.left_stick_y, (gamepad1.right_stick_x), gamepad1.left_stick_x);
     }
 
     @Override
     public void stop() {
-        if (this.cThread != null) {
-            this.cThread.cancel(true);
-            this.cThreadExec.shutdownNow();
-        }
-//        this.cThread.interrupt();
-//        threads.forEach(Thread::interrupt);
+        if (this.cThreadExec != null) cThreadExec.shutdownNow();
+    }
+
+
+    public List<ControllerListener> listeners() {
+        return new ArrayList<>();
     }
 
 }
