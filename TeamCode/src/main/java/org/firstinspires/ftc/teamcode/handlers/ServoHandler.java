@@ -23,6 +23,7 @@ public class ServoHandler extends HardwareComponentHandler<Servo> {
     }
     public ServoHandler(String deviceName) {
         this(hardwareMap.get(Servo.class, deviceName));
+        this.name = deviceName;
     }
 
     public void setPosition(double position) {
