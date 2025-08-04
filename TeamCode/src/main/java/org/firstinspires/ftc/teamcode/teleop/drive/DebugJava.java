@@ -7,6 +7,7 @@ import org.firstinspires.ftc.teamcode.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.PersistentTelemetry;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
+import org.firstinspires.ftc.teamcode.handlers.controller.ActiveListener;
 import org.firstinspires.ftc.teamcode.handlers.controller.ControllerListener;
 import org.firstinspires.ftc.teamcode.handlers.controller.HoldListener;
 import org.firstinspires.ftc.teamcode.handlers.controller.InitListener;
@@ -36,12 +37,26 @@ public class DebugJava extends DriveJava {
     private List<HardwareComponentHandler<?>> otherDevices;
     private final Map<DcMotorExHandler, Double> strictMMOffsets = new HashMap<>();
 
+    private final PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
 
     private final List<ControllerListener> strictMMs = List.of(
-            StickyListener.of(() -> gamepad1.x, this::startStrictMM, this::logStrictMM)
+            StickyListener.of(() -> gamepad1.x, () -> {
+                pTelem.setData("Start/end", true);
+                this.startStrictMM();
+            }, () -> {
+                pTelem.setData("Start/end", false);
+                this.logStrictMM();
+            })
+    );
+    private final List<Supplier<Boolean>> freeMMListeners = List.of(
+            () -> isControlled(gamepad1.left_stick_x), () -> isControlled(gamepad1.left_stick_y),
+            () -> isControlled(gamepad1.right_stick_x)
+    );
+    private final List<ControllerListener> freeMMs = List.of(
+            ActiveListener.of(() -> freeMMListeners.stream().anyMatch(Supplier::get), this::logFreeMM)
     );
     private final List<Supplier<Boolean>> otherListeners = List.of(
-            () -> isControlled(gamepad2.left_stick_y), () -> isControlled(gamepad2.right_stick_y)
+                    () -> isControlled(gamepad2.left_stick_y), () -> isControlled(gamepad2.right_stick_y)
             , () -> gamepad2.dpad_left, () -> gamepad2.dpad_right
             , () -> isControlled(gamepad2.left_trigger), () -> isControlled(gamepad2.right_trigger)
             , () -> gamepad2.left_bumper, () -> gamepad2.right_bumper
@@ -68,14 +83,18 @@ public class DebugJava extends DriveJava {
     private String mmName, omName;
     private ExecutorService movementCapture;
 
-    private final PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
 
 
-
-    private void initLogThreads() {
+    private void initStrictThreads() {
         if (this.movementCapture != null) return;
         this.movementCapture = Executors.newFixedThreadPool(strictMMs.size() + omListeners.size());
         for (ControllerListener l : strictMMs) movementCapture.submit(toPersistentThread(l::update));
+        for (ControllerListener l : omListeners) movementCapture.submit(toPersistentThread(l::update));
+    }
+    private void initFreeThreads() {
+        if (this.movementCapture != null) return;
+        this.movementCapture = Executors.newFixedThreadPool(freeMMs.size() + omListeners.size());
+        for (ControllerListener l : freeMMs) movementCapture.submit(toPersistentThread(l::update));
         for (ControllerListener l : omListeners) movementCapture.submit(toPersistentThread(l::update));
     }
     private void stopLogThreads() {
@@ -105,7 +124,7 @@ public class DebugJava extends DriveJava {
         pTelem.addLine("All debug controls are on gamepad 1");
         pTelem.addLine("Change driving mode with dpad up (STRICT), dpad down (FREE)");
         pTelem.addLine("Change strict mode with dpad left (STRAIGHT), dpad right (TURN)");
-        pTelem.addLine("Start/end strict logging with X");
+        pTelem.addData("Start/end strict logging with X (started", false);
         pTelem.addLine("Manually log with B");
         pTelem.addLine("Enable log with right trigger, disable log with left trigger");
         pTelem.addLine("");
@@ -130,14 +149,14 @@ public class DebugJava extends DriveJava {
     @Override
     public void start() {
         super.start();
-        initLogThreads();
+        initStrictThreads();
     }
 
     @Override
     public void drive() {
 
         if (isControlled(gamepad1.right_trigger)) {
-            initLogThreads();
+            initStrictThreads();
             logEnabled = true;
         } else if (isControlled(gamepad1.left_trigger)) {
             stopLogThreads();
@@ -161,10 +180,14 @@ public class DebugJava extends DriveJava {
         if (gamepad1.y) {
             strictMode = "TURN";
         }
-        if (gamepad1.dpad_up) {
+        if (gamepad1.dpad_up && !movementMode.equals("STRICT")) {
+            stopLogThreads();
+            initStrictThreads();
             movementMode = "STRICT";
         }
-        if (gamepad1.dpad_down) {
+        if (gamepad1.dpad_down && !movementMode.equals("FREE")) {
+            stopLogThreads();
+            initFreeThreads();
             movementMode = "FREE";
         }
         if (gamepad1.dpad_left) {
@@ -181,7 +204,7 @@ public class DebugJava extends DriveJava {
                     strictMode.equals("STRAIGHT") ? 0 : gamepad1.right_stick_x,
                     strictMode.equals("TURN") ? 0 : gamepad1.left_stick_x);
         } else if (movementMode.equals("FREE")) {
-//            moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x);
+            moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x);
 //            this.logFreeMM();
 //            runTasksAsync(
 //                    () -> moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x),
