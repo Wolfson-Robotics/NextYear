@@ -10,6 +10,9 @@ public class HandlerMap {
     public static void put(String name, HardwareComponentHandler<?> handler) {
         handlerMap.put(name, handler);
     }
+    public static void put(HardwareComponentHandler<?> handler) {
+        put(handler.toString(), handler);
+    }
     @SuppressWarnings("unchecked")
     public static <T extends HardwareComponentHandler<?>> T get(String name) {
         return (T) handlerMap.get(name);

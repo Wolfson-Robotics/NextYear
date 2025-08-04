@@ -1,6 +1,10 @@
 package org.firstinspires.ftc.teamcode.handlers;
 
+import androidx.annotation.NonNull;
+
 import com.qualcomm.robotcore.hardware.HardwareDevice;
+
+import java.util.Optional;
 
 public abstract class HardwareComponentHandler<T extends HardwareDevice> {
 
@@ -44,6 +48,11 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
     public boolean equals(Object obj) {
         if (!(obj instanceof HardwareComponentHandler)) return false;
         return device.equals(((HardwareComponentHandler<?>) obj).device);
+    }
+    @NonNull
+    @Override
+    public String toString() {
+        return Optional.ofNullable(name).orElse(device.toString());
     }
     @Override
     public int hashCode() {

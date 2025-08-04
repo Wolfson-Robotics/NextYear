@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class HardwareSnapshot implements Serializable {
     }
 
     // Accepts raw system times/offsetted times
-    public boolean happened(long time) {
+    public boolean happening(long time) {
         return time >= start && time <= end;
     }
 
@@ -120,8 +121,10 @@ public class HardwareSnapshot implements Serializable {
         return "[(" + start + ", " + end + (offset != 0L ? ", " + offset : "") + "), {" + serializeMap(motorPoses) + "}, {" + serializeMap(motorPowers) + "}]";
     }
     public static HardwareSnapshot deserialize(String serialized) {
-        Pattern serialWrapper = Pattern.compile("\\[\\((\\d+), (\\d+)\\), \\{(.*?)\\}, \\{(.*?)\\}]");
-        Pattern serialMap = Pattern.compile("([^:]+): ([^,]+)");
+//        Pattern serialWrapper = Pattern.compile("\\[\\((\\d+), (\\d+)\\), \\{(.*?)\\}, \\{(.*?)\\}]");
+        Pattern serialWrapper = Pattern.compile("\\[\\((\\d+), (\\d+), (\\d+)\\), \\{(.*?)\\}, \\{(.*?)\\}]");
+//        Pattern serialWrapper = Pattern.compile("\\[\\(([^)]+)\\), \\{(.*?)\\}, \\{(.*?)\\}]");
+//        Pattern serialMap = Pattern.compile("([^:]+): ([^,]+)");
 
         Matcher mainMatcher = serialWrapper.matcher(serialized);
         if (!mainMatcher.matches()) {
@@ -131,28 +134,36 @@ public class HardwareSnapshot implements Serializable {
         long start = Long.parseLong(Objects.requireNonNull(mainMatcher.group(1)));
         long end = Long.parseLong(Objects.requireNonNull(mainMatcher.group(2)));
         long offset = Long.parseLong(Optional.ofNullable(mainMatcher.group(3)).orElse("0"));
-        String motorPosesStr = mainMatcher.group(3);
-        String motorPowersStr = mainMatcher.group(4);
+        String motorPosesStr = mainMatcher.group(4);
+        String motorPowersStr = mainMatcher.group(5);
         if (motorPosesStr == null && motorPowersStr == null) {
             throw new IllegalArgumentException("No maps specified");
         }
 
         Map<HardwareComponentHandler<?>, Double> motorPoses = new HashMap<>();
         if (motorPosesStr != null) {
-            Matcher motorPosesMatcher = serialMap.matcher(motorPosesStr);
-            while (motorPosesMatcher.find()) {
-                motorPoses.put(HandlerMap.get(motorPosesMatcher.group(1)),
-                        Double.parseDouble(Objects.requireNonNull(motorPosesMatcher.group(2))));
-            }
+            Arrays.stream(motorPosesStr.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.split(":"))
+                    .forEach(motor -> {
+                        if (motor.length != 2) throw new IllegalArgumentException("Invalid motor pos format");
+                        motorPoses.put(HandlerMap.get(motor[0]),
+                                Double.parseDouble(Objects.requireNonNull(motor[1])));
+                    });
         }
 
         Map<DcMotorExHandler, Double> motorPowers = new HashMap<>();
         if (motorPowersStr != null) {
-            Matcher motorPowersMatcher = serialMap.matcher(motorPowersStr);
-            while (motorPowersMatcher.find()) {
-                motorPowers.put(HandlerMap.get(motorPowersMatcher.group(1)),
-                        Double.parseDouble(Objects.requireNonNull(motorPowersMatcher.group(2))));
-            }
+            Arrays.stream(motorPowersStr.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(s -> s.split(":"))
+                    .forEach(motor -> {
+                        if (motor.length != 2) throw new IllegalArgumentException("Invalid motor power format");
+                        motorPowers.put(HandlerMap.get(motor[0]),
+                                Double.parseDouble(Objects.requireNonNull(motor[1])));
+                    });
         }
 
         HardwareSnapshot snapshot = new HardwareSnapshot(start, end, offset, motorPoses, motorPowers);

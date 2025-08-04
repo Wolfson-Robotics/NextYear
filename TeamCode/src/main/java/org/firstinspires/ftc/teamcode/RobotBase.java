@@ -15,7 +15,8 @@ import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
 import org.firstinspires.ftc.teamcode.handlers.camera.CameraHandler;
 
-import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public abstract class RobotBase extends OpMode {
 
@@ -79,19 +80,22 @@ public abstract class RobotBase extends OpMode {
     }
 
     public void registerHandlers() {
-        Field[] fields = getClass().getDeclaredFields();
-        for (Field field : fields) {
+        Stream.concat(
+                Arrays.stream(getClass().getDeclaredFields()),
+                Arrays.stream(RobotBase.class.getDeclaredFields())
+        ).forEach(field -> {
             if (!HardwareComponentHandler.class.isAssignableFrom(field.getType())) {
-                continue;
+                return;
             }
             HardwareComponentHandler<?> handler;
             try {
                 handler = (HardwareComponentHandler<?>) field.get(this);
             } catch (IllegalAccessException e) {
-                continue;
+                return;
             }
-            HandlerMap.put(handler.getName(), handler);
-        }
+            if (handler == null) return;
+            HandlerMap.put(handler);
+        });
     }
 
 
