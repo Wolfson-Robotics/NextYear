@@ -11,6 +11,8 @@ public class HandlerTest extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+        telemetry.addData("voltage", hardwareMap.voltageSensor.get("Control Hub").getVoltage());
+        telemetry.update();
         DcMotorEx lf_drive_raw = hardwareMap.get(DcMotorEx.class, "lf_drive");
         DcMotorExHandler lf_drive = new DcMotorExHandler(lf_drive_raw);
         lf_drive.setPositionBounds(-130, 50);
