@@ -78,7 +78,8 @@ public class DebugJava extends DriveJava {
     private HardwareSnapshot lastMMState, lastOMState;
     private long mmStartTime = 0L, omStartTime = 0L;
 
-    private final AtomicInteger mmLogCounter = new AtomicInteger(0), omLogCounter = new AtomicInteger(0);
+    private final AtomicInteger mmLogCounter = new AtomicInteger(0), omLogCounter = new AtomicInteger(0),
+            mmMergeCounter = new AtomicInteger(0);
 
     private String mmName, omName;
     private ExecutorService movementCapture;
@@ -98,7 +99,8 @@ public class DebugJava extends DriveJava {
     private void initFree() {
         if (this.movementCapture != null) return;
         this.movementCapture = Executors.newFixedThreadPool(freeMMs.size() + omListeners.size());
-        for (ControllerListener l : freeMMs) movementCapture.submit(toPersistentThread(l::update));
+//        for (ControllerListener l : freeMMs) movementCapture.submit(toPersistentThread(l::update));
+        movementCapture.submit(toPersistentThread(this::logFreeMM));
         for (ControllerListener l : omListeners) movementCapture.submit(toPersistentThread(l::update));
     }
     private void stopLogThreads() {
@@ -141,6 +143,7 @@ public class DebugJava extends DriveJava {
         pTelem.addData("Total MM snapshots taken", () -> mmLogCounter.get() + mmLogs.size());
         pTelem.addData("Total OM snapshots taken", () -> omLogCounter.get() + omLogs.size());
         pTelem.addData("MM snapshots logged", mmLogCounter::get);
+        pTelem.addData("MM snapshots merged", mmMergeCounter::get);
         pTelem.addData("OM snapshots logged", omLogCounter::get);
         pTelem.addLine(" ");
         pTelem.addLine("Runtime variables");
@@ -232,11 +235,28 @@ public class DebugJava extends DriveJava {
         try {
             pTelem.appendLine("Manually log", ", logging mm");
             FileLogger mmLogger = new FileLogger(mmName);
+
+            HardwareSnapshot firstEqu = null, lastEqu = null;
             for (HardwareSnapshot mmSnapshot : mmLogs) {
-                mmLogger.logData(mmSnapshot.serialize());
+                if (firstEqu == null) {
+                    firstEqu = mmSnapshot;
+                    lastEqu = mmSnapshot;
+                    continue;
+                }
+                else if (firstEqu.equals(mmSnapshot)) {
+                    lastEqu = mmSnapshot;
+                    mmMergeCounter.incrementAndGet();
+                    continue;
+                }
+                mmLogger.logData((lastEqu != null ? HardwareSnapshot.merge(firstEqu, lastEqu) : mmSnapshot).serialize());
+                firstEqu = mmSnapshot;
+                lastEqu = null;
                 mmLogCounter.incrementAndGet();
             }
+            if (lastEqu != null) mmLogger.logData(HardwareSnapshot.merge(firstEqu, lastEqu).serialize());
+            else if (firstEqu != null) mmLogger.logData(firstEqu.serialize());
             mmLogger.close();
+
             pTelem.appendLine("Manually log", ", logged mm");
             mmLogs.clear();
         } catch (IOException e) {
@@ -261,6 +281,7 @@ public class DebugJava extends DriveJava {
 //        pTelem.setLine("Manually log", "Manually log with B");
     }
 
+
     private void startOM() {
         this.omStartTime = System.nanoTime();
     }
@@ -276,18 +297,13 @@ public class DebugJava extends DriveJava {
     }
 
 
+    // Delay mmLog appendage and HardwareSnapshot creation to allow for timelapse
     private void logFreeMM() {
-        HardwareSnapshot mmState = new HardwareSnapshot(0, movementMotors);
         if (this.lastMMState != null) {
-            if (this.lastMMState.equals(mmState)) return;
             this.lastMMState.end();
             mmLogs.add(this.lastMMState);
         }
-        // Reconstruct HardwareSnapshot since the above operations take time and desynchronize
-        // the snapshot with its actual time bearings, leading to succeeding snapshots taking
-        // place while the previous one is still going
-        this.lastMMState = HardwareSnapshot.copy(mmState).offset(startTime);
-
+        this.lastMMState = new HardwareSnapshot(movementMotors).offset(startTime);
     }
 
     private void startStrictMM() {

@@ -22,8 +22,8 @@ public class HardwareSnapshot implements Serializable {
     private long end;
     private long offset = 0L;
 
-    private final Map<HardwareComponentHandler<?>, Double> motorPoses = new HashMap<>();
-    private final Map<DcMotorExHandler, Double> motorPowers = new HashMap<>();
+    public final Map<HardwareComponentHandler<?>, Double> motorPoses = new HashMap<>();
+    public final Map<DcMotorExHandler, Double> motorPowers = new HashMap<>();
 
 
     private <T extends HardwareComponentHandler<?>> HardwareSnapshot(long start, long end, long offset,
@@ -181,6 +181,9 @@ public class HardwareSnapshot implements Serializable {
 
     public static HardwareSnapshot copy(HardwareSnapshot state) {
         return new HardwareSnapshot(System.nanoTime(), state.end != 0L ? (state.end - state.start) + System.nanoTime() : 0L, state.offset, state.motorPoses, state.motorPowers);
+    }
+    public static HardwareSnapshot merge(HardwareSnapshot start, HardwareSnapshot end) {
+        return new HardwareSnapshot(start.start, end.end, end.offset, end.motorPoses, end.motorPowers);
     }
 
 
