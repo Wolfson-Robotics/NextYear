@@ -85,13 +85,17 @@ public class DebugJava extends DriveJava {
 
 
 
-    private void initStrictThreads() {
+    private void initStrict() {
+        if (this.lastMMState != null) {
+            this.logFreeMM();
+            this.lastMMState = null;
+        }
         if (this.movementCapture != null) return;
         this.movementCapture = Executors.newFixedThreadPool(strictMMs.size() + omListeners.size());
         for (ControllerListener l : strictMMs) movementCapture.submit(toPersistentThread(l::update));
         for (ControllerListener l : omListeners) movementCapture.submit(toPersistentThread(l::update));
     }
-    private void initFreeThreads() {
+    private void initFree() {
         if (this.movementCapture != null) return;
         this.movementCapture = Executors.newFixedThreadPool(freeMMs.size() + omListeners.size());
         for (ControllerListener l : freeMMs) movementCapture.submit(toPersistentThread(l::update));
@@ -149,14 +153,14 @@ public class DebugJava extends DriveJava {
     @Override
     public void start() {
         super.start();
-        initStrictThreads();
+        initStrict();
     }
 
     @Override
     public void drive() {
 
         if (isControlled(gamepad1.right_trigger)) {
-            initStrictThreads();
+            initStrict();
             logEnabled = true;
         } else if (isControlled(gamepad1.left_trigger)) {
             stopLogThreads();
@@ -182,12 +186,12 @@ public class DebugJava extends DriveJava {
         }
         if (gamepad1.dpad_up && !movementMode.equals("STRICT")) {
             stopLogThreads();
-            initStrictThreads();
+            initStrict();
             movementMode = "STRICT";
         }
         if (gamepad1.dpad_down && !movementMode.equals("FREE")) {
             stopLogThreads();
-            initFreeThreads();
+            initFree();
             movementMode = "FREE";
         }
         if (gamepad1.dpad_left) {
@@ -205,11 +209,6 @@ public class DebugJava extends DriveJava {
                     strictMode.equals("TURN") ? 0 : gamepad1.left_stick_x);
         } else if (movementMode.equals("FREE")) {
             moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x);
-//            this.logFreeMM();
-//            runTasksAsync(
-//                    () -> moveBot(-gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.left_stick_x),
-//                    this::logFreeMM
-//            );
         }
         pTelem.update();
     }
@@ -278,13 +277,16 @@ public class DebugJava extends DriveJava {
 
 
     private void logFreeMM() {
-        HardwareSnapshot mmState = new HardwareSnapshot(movementMotors).offset(startTime);
+        HardwareSnapshot mmState = new HardwareSnapshot(0, movementMotors);
         if (this.lastMMState != null) {
             if (this.lastMMState.equals(mmState)) return;
             this.lastMMState.end();
             mmLogs.add(this.lastMMState);
         }
-        this.lastMMState = mmState;
+        // Reconstruct HardwareSnapshot since the above operations take time and desynchronize
+        // the snapshot with its actual time bearings, leading to succeeding snapshots taking
+        // place while the previous one is still going
+        this.lastMMState = HardwareSnapshot.copy(mmState).offset(startTime);
 
     }
 

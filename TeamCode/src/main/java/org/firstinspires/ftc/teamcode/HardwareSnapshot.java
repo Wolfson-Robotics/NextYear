@@ -95,6 +95,12 @@ public class HardwareSnapshot implements Serializable {
     public boolean happening(long time) {
         return time >= start && time <= end;
     }
+    public boolean willhappen(long time) {
+        return time <= start;
+    }
+    public boolean happened(long time) {
+        return time > end;
+    }
 
     public void recreate() {
         Map<DcMotorExHandler, Double> herePowers = new HashMap<>(motorPowers);
@@ -102,7 +108,8 @@ public class HardwareSnapshot implements Serializable {
             if (k instanceof DcMotorExHandler) {
                 DcMotorExHandler kD = (DcMotorExHandler) k;
                 herePowers.remove(k);
-                kD.setPosition(v, motorPowers.get(kD));
+                kD.setPower(motorPowers.get(kD));
+//                kD.setPosition(v, motorPowers.get(kD));
             } else {
                 k.setPosition(v);
             }
@@ -172,10 +179,15 @@ public class HardwareSnapshot implements Serializable {
         return snapshot;
     }
 
+    public static HardwareSnapshot copy(HardwareSnapshot state) {
+        return new HardwareSnapshot(System.nanoTime(), state.end != 0L ? (state.end - state.start) + System.nanoTime() : 0L, state.offset, state.motorPoses, state.motorPowers);
+    }
+
 
     public boolean equals(HardwareSnapshot state) {
-        return !(state.motorPoses.entrySet().stream().anyMatch(e -> !Objects.equals(motorPoses.get(e.getKey()), e.getValue())) ||
-                state.motorPowers.entrySet().stream().anyMatch(e -> !Objects.equals(motorPowers.get(e.getKey()), e.getValue())));
+//        return !(state.motorPoses.entrySet().stream().anyMatch(e -> !Objects.equals(motorPoses.get(e.getKey()), e.getValue())) ||
+                return state.motorPowers.entrySet().stream().allMatch(e -> Objects.equals(motorPowers.get(e.getKey()), e.getValue()));
     }
+
 
 }

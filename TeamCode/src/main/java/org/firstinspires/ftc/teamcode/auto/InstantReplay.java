@@ -90,6 +90,16 @@ public class InstantReplay extends RobotBase {
     }
 
     @Override
+    public void init() {
+        super.init();
+        // todo: make not static
+        lf_drive.resetEncoder();
+        rf_drive.resetEncoder();
+        lb_drive.resetEncoder();
+        rb_drive.resetEncoder();
+    }
+
+    @Override
     public void init_loop() {
         if (this.mmSnapshots == null) {
             this.mmSnapshots = this.parseLog("mm");
@@ -116,6 +126,9 @@ public class InstantReplay extends RobotBase {
             while (!Thread.currentThread().isInterrupted() && !mmSnapshots.isEmpty()) {
                 HardwareSnapshot currentSnapshot = mmSnapshots.get(0);
                 mmSnapshots.remove(0);
+                while (!Thread.currentThread().isInterrupted() && currentSnapshot.willhappen(System.nanoTime() - start)) {
+                    Thread.yield();
+                }
                 Async.async(currentSnapshot::recreate);
 
                 pTelem.setData("MM snapshots left", mmSnapshots.size());
@@ -131,6 +144,9 @@ public class InstantReplay extends RobotBase {
             while (!Thread.currentThread().isInterrupted() && !omSnapshots.isEmpty()) {
                 HardwareSnapshot currentSnapshot = omSnapshots.get(0);
                 omSnapshots.remove(0);
+                while (!Thread.currentThread().isInterrupted() && currentSnapshot.willhappen(System.nanoTime() - start)) {
+                    Thread.yield();
+                }
                 Async.async(currentSnapshot::recreate);
 
                 pTelem.setData("OM snapshots left", omSnapshots.size());
