@@ -172,8 +172,8 @@ public class InstantReplay extends RobotBase {
 
     @Override
     public void stop() {
-        mmThread.interrupt();
-        omThread.interrupt();
+        if (mmThread != null) mmThread.interrupt();
+        if (omThread != null) omThread.interrupt();
         super.stop();
     }
 

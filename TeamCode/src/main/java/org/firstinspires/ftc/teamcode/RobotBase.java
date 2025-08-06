@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
 import org.firstinspires.ftc.teamcode.handlers.camera.CameraHandler;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 public abstract class RobotBase extends OpMode {
@@ -40,6 +41,9 @@ public abstract class RobotBase extends OpMode {
 
     protected final String storagePath = Environment.getExternalStorageDirectory().getPath();
     protected final String logsPath = storagePath + "/Logs/";
+
+    // Runtime variables
+    private final AtomicBoolean stop = new AtomicBoolean(false);
 
 
 
@@ -129,7 +133,8 @@ public abstract class RobotBase extends OpMode {
 
     protected Runnable toPersistentThread(Runnable fn) {
         return () -> {
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!Thread.currentThread().isInterrupted() && !stop.get()) {
+                System.out.println("not interupted");
                 try {
                     fn.run();
                 } catch (Throwable t) {
@@ -140,11 +145,17 @@ public abstract class RobotBase extends OpMode {
                 }
                 sleep(10);
             }
+            Thread.currentThread().interrupt();
         };
     }
 
     protected boolean isControlled(double control) {
         return Math.abs(control) > 0.1;
+    }
+
+    @Override
+    public void stop() {
+        stop.set(true);
     }
 
 

@@ -162,7 +162,11 @@ public class DriveJava extends RobotBase {
 
     @Override
     public void stop() {
-        if (this.cThreadExec != null) cThreadExec.shutdownNow();
+        if (this.cThreadExec != null) {
+            cThreadExec.shutdownNow();
+            this.cThreadExec = null;
+        }
+        super.stop();
     }
 
 
