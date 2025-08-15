@@ -7,6 +7,7 @@ import android.os.Environment;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.stream.CameraStreamSource;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
@@ -14,8 +15,10 @@ import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 import org.firstinspires.ftc.teamcode.handlers.ServoHandler;
 import org.firstinspires.ftc.teamcode.handlers.camera.CameraHandler;
+import org.firstinspires.ftc.teamcode.util.Async;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -134,7 +137,6 @@ public abstract class RobotBase extends OpMode {
     protected Runnable toPersistentThread(Runnable fn) {
         return () -> {
             while (!Thread.currentThread().isInterrupted() && !stop.get()) {
-                System.out.println("not interupted");
                 try {
                     fn.run();
                 } catch (Throwable t) {
@@ -153,9 +155,17 @@ public abstract class RobotBase extends OpMode {
         return Math.abs(control) > 0.1;
     }
 
+    public VoltageSensor getVoltageSensor() {
+        return hardwareMap.voltageSensor.get("Control Hub");
+    }
+    public double getVoltage() {
+        return Optional.ofNullable(getVoltageSensor()).map(VoltageSensor::getVoltage).orElse(-1d);
+    }
+
     @Override
     public void stop() {
         stop.set(true);
+        Async.stopAll();
     }
 
 

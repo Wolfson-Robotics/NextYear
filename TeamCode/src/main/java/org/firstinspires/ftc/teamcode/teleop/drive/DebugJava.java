@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.teleop.drive;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.FileLogger;
-import org.firstinspires.ftc.teamcode.HardwareSnapshot;
+import org.firstinspires.ftc.teamcode.auto.debug.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.PersistentTelemetry;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
@@ -113,7 +113,7 @@ public class DebugJava extends DriveJava {
     @Override
     public void init() {
         super.init();
-        this.movementMotors = List.of(lf_drive, lb_drive, rf_drive, lb_drive);
+        this.movementMotors = List.of(lf_drive, lb_drive, rf_drive, rb_drive);
 //        this.otherDevices = List.of(lift, arm, /*slide1, slide2,*/ slideArm, claw);
         this.otherDevices = List.of(arm, claw);
 
@@ -303,19 +303,19 @@ public class DebugJava extends DriveJava {
             this.lastMMState.end();
             mmLogs.add(this.lastMMState);
         }
-        this.lastMMState = new HardwareSnapshot(movementMotors).offset(startTime);
+        this.lastMMState = new HardwareSnapshot(movementMotors, getVoltage()).offset(startTime);
     }
 
     private void startStrictMM() {
         this.mmStartTime = System.nanoTime();
-        movementMotors.forEach(motor -> strictMMOffsets.put(motor, motor.getPosition()));
+        movementMotors.forEach(motor -> strictMMOffsets.put(motor, motor.getRelativePosition()));
     }
 
     private void logStrictMM() {
         Map<DcMotorExHandler, Double> freeMMPoses = movementMotors.stream()
                 .collect(Collectors.toMap(
                         m -> m,
-                        m -> m.getPosition() - strictMMOffsets.get(m),
+                        m -> m.getRelativePosition() - strictMMOffsets.get(m),
                         (a, b) -> a,
                         HashMap::new
                 ));

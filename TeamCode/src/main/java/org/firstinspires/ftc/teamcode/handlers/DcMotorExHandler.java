@@ -18,7 +18,6 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
 
     private Map<IntegerBounds, Double> speedMap = new HashMap<>();
 
-    private final int startPos;
     // Manual control runtime variables
     private boolean stasisAchieved = false, lowerLimited = false, upperLimited = false, setMode = false, startedMoving = false;
     private double lastPoweredPos;
@@ -277,13 +276,47 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         return posWithin(getPosition());
     }
 
+    public boolean equPos(double pos1, double pos2) {
+        return Math.abs(pos1 - pos2) <= getTargetPositionTolerance();
+    }
+    public boolean equPos(double position) {
+        return equPos(position, getPosition());
+    }
+
+    public boolean pastPos(double post, double curr) {
+        return getDirection() == Direction.REVERSE ? curr < post : curr > post;
+    }
+    public boolean pastPos(double position) {
+        return pastPos(position, getPosition());
+    }
+    public boolean pastRelativePos(double post, double currPos) {
+        return pastPos(post, currPos);
+    }
+    public boolean pastRelativePos(double position) {
+        return pastRelativePos(position, getRelativePosition());
+    }
+
+    public boolean behindPos(double post, double curr) {
+        return getDirection() == Direction.REVERSE ? curr > post : curr < post;
+    }
+    public boolean behindPos(double position) {
+        return behindPos(position, getPosition());
+    }
+    public boolean behindRelativePos(double post, double currPos) {
+        return behindPos(post, currPos);
+    }
+    public boolean behindRelativePos(double position) {
+        return behindRelativePos(position, getRelativePosition());
+    }
+
+
 
     public void setSpeedMap(Map<IntegerBounds, Double> speedMap) {
         this.speedMap = speedMap;
     }
     public void setPositionBounds(int lowerPos, int upperPos) {
-        this.lowerPos = Math.min(lowerPos, upperPos) + this.startPos;
-        this.upperPos = Math.max(lowerPos, upperPos) + this.startPos;
+        this.lowerPos = (int) (Math.min(lowerPos, upperPos) + this.startPos);
+        this.upperPos = (int) (Math.max(lowerPos, upperPos) + this.startPos);
     }
 
     public synchronized double getPower() {
@@ -291,6 +324,9 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
     }
     public synchronized double getPosition() {
         return this.device.getCurrentPosition();
+    }
+    public int getTargetPositionTolerance() {
+        return this.device.getTargetPositionTolerance();
     }
     public synchronized DcMotorEx.Direction getDirection() {
         return this.device.getDirection();

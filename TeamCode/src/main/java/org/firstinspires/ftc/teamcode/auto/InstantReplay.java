@@ -4,9 +4,12 @@ import static org.firstinspires.ftc.teamcode.util.Async.sleep;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-import org.firstinspires.ftc.teamcode.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.PersistentTelemetry;
 import org.firstinspires.ftc.teamcode.RobotBase;
+import org.firstinspires.ftc.teamcode.auto.debug.HardwareContext;
+import org.firstinspires.ftc.teamcode.auto.debug.HardwareSnapshot;
+import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
+import org.firstinspires.ftc.teamcode.handlers.HandlerMap;
 import org.firstinspires.ftc.teamcode.util.Async;
 
 import java.io.BufferedReader;
@@ -25,6 +28,10 @@ public class InstantReplay extends RobotBase {
 
     private Thread mmThread, omThread;
     private final PersistentTelemetry pTelem = new PersistentTelemetry(telemetry);
+
+    // Runtime variables
+    private HardwareContext context;
+
 
     private List<HardwareSnapshot> parseLog(String type) {
 
@@ -92,11 +99,8 @@ public class InstantReplay extends RobotBase {
     @Override
     public void init() {
         super.init();
-        // todo: make not static
-        lf_drive.resetEncoder();
-        rf_drive.resetEncoder();
-        lb_drive.resetEncoder();
-        rb_drive.resetEncoder();
+        this.context = new HardwareContext(this::getVoltageSensor);
+        HandlerMap.allMotors().forEach(DcMotorExHandler::resetEncoder);
     }
 
     @Override
@@ -121,22 +125,19 @@ public class InstantReplay extends RobotBase {
         pTelem.update();
 
         long start = System.nanoTime();
-
         this.mmThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted() && !mmSnapshots.isEmpty()) {
                 HardwareSnapshot currentSnapshot = mmSnapshots.get(0);
+                currentSnapshot.delay(context.offset());
                 mmSnapshots.remove(0);
                 while (!Thread.currentThread().isInterrupted() && currentSnapshot.willhappen(System.nanoTime() - start)) {
                     Thread.yield();
                 }
-                Async.async(currentSnapshot::recreate);
-
-                pTelem.setData("MM snapshots left", mmSnapshots.size());
-                pTelem.update();
-
+                Async.async(() -> currentSnapshot.recreate(context));
                 while (!Thread.currentThread().isInterrupted() && currentSnapshot.happening(System.nanoTime() - start)) {
                     Thread.yield();
                 }
+                context.prev(currentSnapshot);
             }
             Thread.currentThread().interrupt();
         });

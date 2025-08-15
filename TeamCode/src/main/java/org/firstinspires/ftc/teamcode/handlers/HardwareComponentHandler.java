@@ -10,6 +10,7 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
 
     protected String name;
     protected final T device;
+    protected double startPos;
 
     public HardwareComponentHandler(T device) {
         this.device = device;
@@ -18,6 +19,12 @@ public abstract class HardwareComponentHandler<T extends HardwareDevice> {
     public abstract void setPower(double power);
     public abstract void setPosition(double position);
     public abstract double getPosition();
+    public synchronized double getRelativePosition() {
+        return getPosition() - getStartPosition();
+    }
+    public double getStartPosition() {
+        return this.startPos;
+    }
 
 
     public void control(double input) {
