@@ -6,6 +6,7 @@ import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -282,6 +283,12 @@ public class HardwareSnapshot implements Serializable {
         return new HardwareSnapshot(start.start, end.end, end.offset, end.motorPoses, end.motorPowers);
     }
 
+    public Map<DcMotorExHandler, Double> motorPowers() {
+        return Collections.unmodifiableMap(motorPowers);
+    }
+    public Map<HardwareComponentHandler<?>, Double> motorPositions() {
+        return Collections.unmodifiableMap(motorPoses);
+    }
 
     public double voltage() {
         return this.voltage;
@@ -289,7 +296,6 @@ public class HardwareSnapshot implements Serializable {
     public long duration() {
         return end - start;
     }
-
 
     public boolean equals(HardwareSnapshot state) {
         return state.motorPowers.entrySet().stream().allMatch(e -> Objects.equals(motorPowers.get(e.getKey()), e.getValue()));

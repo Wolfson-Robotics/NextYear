@@ -3,8 +3,8 @@ package org.firstinspires.ftc.teamcode.teleop.drive;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.FileLogger;
-import org.firstinspires.ftc.teamcode.auto.debug.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.PersistentTelemetry;
+import org.firstinspires.ftc.teamcode.auto.debug.HardwareSnapshot;
 import org.firstinspires.ftc.teamcode.handlers.DcMotorExHandler;
 import org.firstinspires.ftc.teamcode.handlers.HardwareComponentHandler;
 import org.firstinspires.ftc.teamcode.handlers.controller.ActiveListener;
@@ -235,6 +235,39 @@ public class DebugJava extends DriveJava {
         try {
             pTelem.appendLine("Manually log", ", logging mm");
             FileLogger mmLogger = new FileLogger(mmName);
+/*
+            HardwareSnapshot last = null;
+            Map<DcMotorExHandler, ObjBounds<Double>> powerInterpol = new HashMap<>(), posInterpol = new HashMap<>();
+            List<HardwareSnapshot> cleanedMMLogs = new ArrayList<>();
+            for (HardwareSnapshot mmSnapshot : mmLogs) {
+
+                if (!powerInterpol.isEmpty()) {
+                    for (Map.Entry<DcMotorExHandler, ObjBounds<Double>> e : powerInterpol.entrySet()) {
+                        DcMotorExHandler k = e.getKey();
+                        if (!mmSnapshot.motorPowers().containsKey(k)) continue;
+                        if (mmSnapshot.motorPowers().get(k) == 0d) {
+                            posInterpol.get(k).upper(mmSnapshot.motorPositions().get(k));
+                            continue;
+                        }
+                        powerInterpol.get(k).upper(mmSnapshot.motorPowers().get(k));
+                    }
+                    if (powerInterpol.values().stream().anyMatch(o -> !o.hasUpper())) {
+
+                    }
+                }
+                for (Map.Entry<DcMotorExHandler, Double> e : mmSnapshot.motorPowers().entrySet()) {
+                    DcMotorExHandler k = e.getKey();
+                    double p = e.getValue();
+                    if (last == null) continue;
+                    Map<DcMotorExHandler, Double> mmPoses = mmSnapshot.motorPowers(), lastPoses = last.motorPowers();
+                    if (p == 0 && mmPoses.containsKey(k) && lastPoses.containsKey(k) && !k.equPos(mmPoses.get(k) - lastPoses.get(k))) {
+                        powerInterpol.put(k, new ObjBounds<>(last.motorPowers().get(k)));
+                        posInterpol.put(k, new ObjBounds<>(mmSnapshot.motorPositions().get(k)));
+                    }
+                }
+                if (!powerInterpol.isEmpty()) continue;
+                last = mmSnapshot;
+            }*/
 
             HardwareSnapshot firstEqu = null, lastEqu = null;
             for (HardwareSnapshot mmSnapshot : mmLogs) {
@@ -312,15 +345,26 @@ public class DebugJava extends DriveJava {
     }
 
     private void logStrictMM() {
-        Map<DcMotorExHandler, Double> freeMMPoses = movementMotors.stream()
+        Map<DcMotorExHandler, Double> strictMMPoses = movementMotors.stream()
                 .collect(Collectors.toMap(
                         m -> m,
-                        m -> m.getRelativePosition() - strictMMOffsets.get(m),
+                        HardwareComponentHandler::getRelativePosition,
+                        (a, b) -> a,
+                        HashMap::new
+                ));
+        Map<DcMotorExHandler, Double> strictMMPowers = movementMotors.stream()
+                .collect(Collectors.toMap(
+                        m -> m,
+                        m -> {
+                            double diff = -m.relativeDiff(strictMMOffsets.get(m));
+                            if (diff == 0) return 0d;
+                            return diff < 0 ? -1d : 1d;
+                        },
                         (a, b) -> a,
                         HashMap::new
                 ));
 
-        HardwareSnapshot freeMMState = new HardwareSnapshot(this.mmStartTime, freeMMPoses);
+        HardwareSnapshot freeMMState = new HardwareSnapshot(this.mmStartTime, strictMMPoses, strictMMPowers, getVoltage());
         freeMMState.end();
         mmLogs.add(freeMMState);
     }

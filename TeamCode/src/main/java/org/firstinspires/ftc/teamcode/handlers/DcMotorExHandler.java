@@ -309,6 +309,17 @@ public class DcMotorExHandler extends HardwareComponentHandler<DcMotorEx> {
         return behindRelativePos(position, getRelativePosition());
     }
 
+    public double diff(double pos1, double pos2) {
+        double diff = dirMult()*(pos2 - pos1);
+        return Math.abs(diff) < getTargetPositionTolerance() ? 0 : diff;
+    }
+    public double diff(double position) {
+        return diff(getPosition(), position);
+    }
+    public double relativeDiff(double position) {
+        return diff(getRelativePosition(), position);
+    }
+
 
 
     public void setSpeedMap(Map<IntegerBounds, Double> speedMap) {
