@@ -106,7 +106,6 @@ public abstract class RobotBase extends OpMode {
     }
 
 
-    // make dynamic based on voltage later
     double powerFactor = 1.;
     protected void moveBot(float vertical, float pivot, float horizontal) {
 //        pivot *= 0.6;
@@ -133,6 +132,14 @@ public abstract class RobotBase extends OpMode {
         lb_drive.setPower(leftBackPower);
     }
 
+    final double TOP_VOLTAGE = 12;
+    final double TOP_SCALE_FACTOR = 1.2; //120%
+    //Scale the powerFactor variable to the voltage.
+    //Used to keep a consistent motor speed and power as battery voltage dwindles.
+    protected void scaleVoltPF() {
+        double currentVoltage = getVoltage();
+        powerFactor = Math.min((TOP_VOLTAGE / currentVoltage), TOP_SCALE_FACTOR);
+    }
 
     protected Runnable toPersistentThread(Runnable fn) {
         return () -> {
