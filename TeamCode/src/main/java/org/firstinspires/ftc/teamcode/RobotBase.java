@@ -48,7 +48,10 @@ public abstract class RobotBase extends OpMode {
     // Runtime variables
     private final AtomicBoolean stop = new AtomicBoolean(false);
 
-
+    //Voltage
+    public static final double NOMINAL_VOLTAGE = 14; //TODO: Check battery voltage
+    public static final double TOP_SCALE_FACTOR = 1.2; //120%
+    public static final double NO_VOLTAGE = -1;
 
     public void init() {
 
@@ -132,13 +135,12 @@ public abstract class RobotBase extends OpMode {
         lb_drive.setPower(leftBackPower);
     }
 
-    final double TOP_VOLTAGE = 12;
-    final double TOP_SCALE_FACTOR = 1.2; //120%
     //Scale the powerFactor variable to the voltage.
     //Used to keep a consistent motor speed and power as battery voltage dwindles.
     protected void scaleVoltPF() {
         double currentVoltage = getVoltage();
-        powerFactor = Math.min((TOP_VOLTAGE / currentVoltage), TOP_SCALE_FACTOR);
+        if (currentVoltage == NO_VOLTAGE) return;
+        powerFactor = Math.min((NOMINAL_VOLTAGE / currentVoltage), TOP_SCALE_FACTOR);
     }
 
     protected Runnable toPersistentThread(Runnable fn) {
@@ -166,7 +168,7 @@ public abstract class RobotBase extends OpMode {
         return hardwareMap.voltageSensor.get("Control Hub");
     }
     public double getVoltage() {
-        return Optional.ofNullable(getVoltageSensor()).map(VoltageSensor::getVoltage).orElse(-1d);
+        return Optional.ofNullable(getVoltageSensor()).map(VoltageSensor::getVoltage).orElse(NO_VOLTAGE);
     }
 
     @Override

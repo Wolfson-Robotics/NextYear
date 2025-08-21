@@ -80,6 +80,7 @@ public class DriveJava extends RobotBase {
 //        lift.control(gamepad2.right_stick_y);
 //        slide1.control(gamepad2.dpad_left, gamepad2.dpad_right);
 //        slide2.control(gamepad2.dpad_left, gamepad2.dpad_right);
+        scaleVoltPF();
         claw.toggleDual(isControlled(gamepad2.left_trigger), isControlled(gamepad2.right_trigger));
 /*
         if (gamepad2.right_bumper) {
